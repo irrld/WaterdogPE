@@ -62,6 +62,18 @@ public abstract class AbstractDownstreamHandler implements BedrockPacketHandler 
     }
 
     @Override
+    public boolean handle(ItemComponentPacket packet) {
+        // If client receives multiple ItemComponentPacket's it will crash
+        // so thats why we need to block it from sending multiple ItemComponentPackets from here
+
+        if (!player.acceptItemComponentPacket()) {
+            throw CancelSignalException.CANCEL;
+        }
+        player.setAcceptItemComponentPacket(false);
+        return false;
+    }
+
+    @Override
     public boolean handle(ChunkRadiusUpdatedPacket packet) {
         this.player.getLoginData().getChunkRadius().setRadius(packet.getRadius());
         return false;

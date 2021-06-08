@@ -40,6 +40,8 @@ import dev.waterdog.waterdogpe.utils.types.TextContainer;
 import dev.waterdog.waterdogpe.utils.types.TranslationContainer;
 import it.unimi.dsi.fastutil.longs.*;
 import it.unimi.dsi.fastutil.objects.*;
+import net.trpixel.enums.ConnectCallback;
+import net.trpixel.enums.ConnectState;
 
 import java.net.InetSocketAddress;
 import java.util.Collection;
@@ -95,6 +97,10 @@ public class ProxiedPlayer implements CommandSender {
      */
     private volatile boolean acceptResourcePacks = true;
     /**
+     * Used to determine if downstream server can send ItemComponentPacket to player.
+     */
+    private volatile boolean acceptItemComponentPacket = true;
+    /**
      * This signalizes the state of dimension change sequence.
      * 0 => No dimension change in progress.
      * 1 => Waiting for first dim change response.
@@ -107,6 +113,7 @@ public class ProxiedPlayer implements CommandSender {
      */
     private final List<PacketHandler> pluginUpstreamHandlers = new ObjectArrayList<>();
     private final List<PacketHandler> pluginDownstreamHandlers = new ObjectArrayList<>();
+    private boolean transferScreenDisabled = false;
 
     public ProxiedPlayer(ProxyServer proxy, BedrockServerSession session, CompressionAlgorithm compression, LoginData loginData) {
         this.proxy = proxy;
@@ -185,6 +192,26 @@ public class ProxiedPlayer implements CommandSender {
      * @param serverInfo ServerInfo of the target downstream server, can be received using ProxyServer#getServer
      */
     public void connect(ServerInfo serverInfo) {
+        connect(serverInfo, new ConnectCallback() {
+            @Override
+            public void whenComplete(ConnectState callback, ServerInfo serverInfo, Throwable error) {
+                switch (callback){
+                    case ALREADY_CONNECTED:
+                        sendMessage(new TranslationContainer("waterdog.downstream.connected", serverInfo.getServerName()));
+                    case ALREADY_CONNECTING:
+                        sendMessage(new TranslationContainer("waterdog.downstream.connecting", serverInfo.getServerName()));
+                        break;
+                    case FAILED:
+                        disconnect(new TranslationContainer("waterdog.downstream.transfer.failed", serverInfo.getServerName(), error.getLocalizedMessage()));
+                        break;
+                    case FALLBACK:
+                        sendMessage(new TranslationContainer("waterdog.connected.fallback", serverInfo.getServerName()));
+                        break;
+                }
+            }
+        });
+    }
+    public void connect(ServerInfo serverInfo, ConnectCallback callback) {
         Preconditions.checkNotNull(serverInfo, "Server info can not be null!");
 
         PreTransferEvent event = new PreTransferEvent(this, serverInfo);
@@ -195,14 +222,14 @@ public class ProxiedPlayer implements CommandSender {
 
         ServerInfo targetServer = event.getTargetServer();
         if (this.downstreamConnection != null && this.downstreamConnection.getServerInfo() == targetServer) {
-            this.sendMessage(new TranslationContainer("waterdog.downstream.connected", serverInfo.getServerName()));
+            callback.completeWith(ConnectState.ALREADY_CONNECTED, targetServer, null);
             return;
         }
 
         DownstreamClient oldPendingConnection = this.getPendingConnection();
         if (oldPendingConnection != null) {
             if (oldPendingConnection.getServerInfo() == targetServer) {
-                this.sendMessage(new TranslationContainer("waterdog.downstream.connecting", serverInfo.getServerName()));
+                callback.completeWith(ConnectState.ALREADY_CONNECTING, targetServer, null);
                 return;
             }
 
@@ -223,11 +250,12 @@ public class ProxiedPlayer implements CommandSender {
             if (this.disconnected.get()) {
                 client.close();
                 this.getLogger().debug("Discarding downstream connection: Player " + this.getName() + " disconnected!");
+                callback.completeWith(ConnectState.DISCONNECTED, targetServer, null);
                 return;
             }
 
             if (error != null) {
-                this.connectFailure(client, targetServer, error);
+                this.connectFailure(client, targetServer, error, callback);
                 return;
             }
 
@@ -249,14 +277,15 @@ public class ProxiedPlayer implements CommandSender {
             }
 
             this.getLogger().info("[" + this.getAddress() + "|" + this.getName() + "] -> Downstream [" + targetServer.getServerName() + "] has connected");
+            callback.completeWith(ConnectState.CONNECTED, targetServer, null);
         })).whenComplete((ignore, error) -> {
             if (error != null) {
-                this.connectFailure(null, targetServer, error);
+                this.connectFailure(null, targetServer, error, callback);
             }
         });
     }
 
-    private void connectFailure(DownstreamClient client, ServerInfo targetServer, Throwable error) {
+    private void connectFailure(DownstreamClient client, ServerInfo targetServer, Throwable error, ConnectCallback callback) {
         this.getLogger().debug("[" + this.getAddress() + "|" + this.getName() + "] Unable to connect to downstream " + targetServer.getServerName(), error);
         this.setPendingConnection(null);
         if (client != null) {
@@ -265,9 +294,9 @@ public class ProxiedPlayer implements CommandSender {
 
         String exceptionMessage = error.getLocalizedMessage();
         if (this.sendToFallback(targetServer, exceptionMessage)) {
-            this.sendMessage(new TranslationContainer("waterdog.connected.fallback", targetServer.getServerName()));
+            callback.completeWith(ConnectState.FALLBACK, targetServer, error);
         } else {
-            this.disconnect(new TranslationContainer("waterdog.downstream.transfer.failed", targetServer.getServerName(), exceptionMessage));
+            callback.completeWith(ConnectState.FAILED, targetServer, error);
         }
     }
 
@@ -865,12 +894,20 @@ public class ProxiedPlayer implements CommandSender {
         this.acceptPlayStatus = acceptPlayStatus;
     }
 
+    public void setAcceptItemComponentPacket(boolean acceptItemComponentPacket) {
+        this.acceptItemComponentPacket = acceptItemComponentPacket;
+    }
+
     public boolean acceptPlayStatus() {
         return this.acceptPlayStatus;
     }
 
     public boolean acceptResourcePacks() {
         return this.acceptResourcePacks;
+    }
+
+    public boolean acceptItemComponentPacket() {
+        return acceptItemComponentPacket;
     }
 
     public void setDimensionChangeState(int state) {
@@ -883,6 +920,14 @@ public class ProxiedPlayer implements CommandSender {
 
     public CompressionAlgorithm getUpstreamCompression() {
         return this.upstreamCompression;
+    }
+
+    public boolean isTransferScreenDisabled() {
+        return transferScreenDisabled;
+    }
+
+    public void setTransferScreenDisabled(boolean transferScreenDisabled) {
+        this.transferScreenDisabled = transferScreenDisabled;
     }
 
     @Override

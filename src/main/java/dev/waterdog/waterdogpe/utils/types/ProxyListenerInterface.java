@@ -15,6 +15,8 @@
 
 package dev.waterdog.waterdogpe.utils.types;
 
+import com.nukkitx.protocol.bedrock.BedrockServerSession;
+
 import java.net.InetSocketAddress;
 
 /**
@@ -60,5 +62,9 @@ public interface ProxyListenerInterface {
      */
     default String onLoginFailed(InetSocketAddress address, boolean xboxAuth, Throwable throwable, String reason) {
         return reason;
+    }
+
+    default void onSessionCreation(BedrockServerSession session) {
+        
     }
 }

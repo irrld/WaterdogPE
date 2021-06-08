@@ -150,6 +150,10 @@ public class ProxyConfig extends YamlConfig {
     @Comment("If enabled, the client will be forced to accept server-sided resource packs")
     private boolean forceServerPacks = false;
 
+    @Path("experiments")
+    @Comment("List of experiments that will sent along with ResourcePackStackPacket")
+    private List<String> experiments  = new ArrayList<>();
+
     @Path("pack_cache_size")
     @Comment("You can set maximum pack size in MB to be cached.")
     private int packCacheSize = 16;
@@ -161,6 +165,10 @@ public class ProxyConfig extends YamlConfig {
     @Path("enable_statistics")
     @Comment("Enable anonymous statistics that are sent to bstats. For more information, check out our bstats page at https://bstats.org/plugin/server-implementation/WaterdogPE/15678")
     private boolean enableAnonymousStatistics = true;
+
+    @Path("disable_transfer_screen")
+    @Comment("Disables dimension screen on transfer")
+    private boolean disableTransferScreen = false;
 
     public ProxyConfig(File file) {
         this.CONFIG_HEADER = new String[]{"Waterdog Main Configuration file", "Configure your desired network settings here."};
@@ -348,5 +356,21 @@ public class ProxyConfig extends YamlConfig {
             throw new IllegalArgumentException("Unsupported compression type: " + compression);
         }
         this.compression = compression;
+    }
+
+    public List<String> getExperiments() {
+        return experiments;
+    }
+
+    public void setExperiments(List<String> experiments) {
+        this.experiments = experiments;
+    }
+
+    public boolean isDisableTransferScreen() {
+        return disableTransferScreen;
+    }
+
+    public void setDisableTransferScreen(boolean disableTransferScreen) {
+        this.disableTransferScreen = disableTransferScreen;
     }
 }

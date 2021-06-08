@@ -21,6 +21,8 @@ import com.nukkitx.protocol.bedrock.data.entity.EntityLinkData;
 import com.nukkitx.protocol.bedrock.handler.BedrockPacketHandler;
 import com.nukkitx.protocol.bedrock.packet.*;
 import dev.waterdog.waterdogpe.player.PlayerRewriteUtils;
+import dev.waterdog.waterdogpe.ProxyServer;
+import dev.waterdog.waterdogpe.event.defaults.PlayerListPacketReceiveEvent;
 import dev.waterdog.waterdogpe.player.ProxiedPlayer;
 
 import java.util.List;
@@ -76,6 +78,8 @@ public class EntityTracker implements BedrockPacketHandler {
 
     @Override
     public boolean handle(PlayerListPacket packet) {
+        var event = new PlayerListPacketReceiveEvent(player, packet);
+        ProxyServer.getInstance().getEventManager().callEvent(event);
         List<PlayerListPacket.Entry> entries = packet.getEntries();
         for (PlayerListPacket.Entry entry : entries) {
             if (packet.getAction() == PlayerListPacket.Action.ADD) {
@@ -84,7 +88,7 @@ public class EntityTracker implements BedrockPacketHandler {
                 this.player.getPlayers().remove(entry.getUuid());
             }
         }
-        return false;
+        return true;
     }
 
     @Override

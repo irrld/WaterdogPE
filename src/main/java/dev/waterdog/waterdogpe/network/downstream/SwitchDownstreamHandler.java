@@ -170,27 +170,35 @@ public class SwitchDownstreamHandler extends AbstractDownstreamHandler {
         injectPosition(this.player.getUpstream(), rewriteData.getSpawnPosition(), rewriteData.getRotation(), rewriteData.getEntityId());
         this.getDownstream().sendPacket(this.player.getLoginData().getChunkRadius());
 
+        this.player.setTransferScreenDisabled(this.player.getProxy().getConfiguration().isDisableTransferScreen());
         // Client does not accept ChangeDimensionPacket when dimension is same as current dimension.
         // If we transfer between same dimensions we are attempting to do dimension change sequence which uses 2 dim changes
         // After client successfully changes dimension we receive PlayerActionPacket#DIMENSION_CHANGE_SUCCESS and continue in transfer
-        int newDimension = determineDimensionId(rewriteData.getDimension(), packet.getDimensionId());
+        int newDimension = player.isTransferScreenDisabled() ? rewriteData.getDimension() : determineDimensionId(rewriteData.getDimension(), packet.getDimensionId());
         TransferCallback transferCallback = new TransferCallback(this.player, this.client, packet.getDimensionId());
 
         rewriteData.setDimension(newDimension);
         rewriteData.setTransferCallback(transferCallback);
         this.player.setDimensionChangeState(TransferCallback.TRANSFER_PHASE_1);
-        injectDimensionChange(this.player.getUpstream(), newDimension, packet.getPlayerPosition(), rewriteData.getEntityId(), this.player.getProtocol());
+        if (!player.isTransferScreenDisabled()) {
+            injectDimensionChange(this.player.getUpstream(), newDimension, packet.getPlayerPosition(), rewriteData.getEntityId(), this.player.getProtocol());
+        }
 
         if (newDimension == packet.getDimensionId()) {
             // Transfer between different dimensions
             // Simulate two dim-change behaviour
             transferCallback.onDimChangeSuccess();
         }  else {
+            if (player.isTransferScreenDisabled()) {
+                rewriteData.setDimension(packet.getDimensionId());
+                injectDimensionChange(this.player.getUpstream(), newDimension, packet.getPlayerPosition(), rewriteData.getEntityId(), this.player.getProtocol());
+            }
             // Force client to exit first dim screen after one second
             PlayStatusPacket status = new PlayStatusPacket();
             status.setStatus(PlayStatusPacket.Status.PLAYER_SPAWN);
-            this.player.getProxy().getScheduler().scheduleDelayed(() -> this.player.sendPacket(status), 20);
+            this.player.getProxy().getScheduler().scheduleDelayed(() -> this.player.sendPacket(status), 20 * 5);
         }
+
         this.getDownstream().onServerConnected(player);
         throw CancelSignalException.CANCEL;
     }
