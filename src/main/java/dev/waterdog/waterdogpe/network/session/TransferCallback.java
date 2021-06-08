@@ -81,6 +81,11 @@ public class TransferCallback {
         injectRemoveAllEffects(this.player.getUpstream(), rewriteData.getEntityId());
         injectClearWeather(this.player.getUpstream());
         injectGameRules(this.player.getUpstream(), rewriteData.getGameRules());
+
+        if (player.isTransferScreenDisabled() && rewriteData.getDimension() == this.targetDimension) {
+            this.onTransferPhase2Completed();
+            this.player.setDimensionChangeState(TRANSFER_RESET);
+        }
     }
 
     private void onTransferPhase2Completed() {

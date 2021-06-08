@@ -56,5 +56,7 @@ public class BedrockCodec419 extends BedrockCodec408 {
 
         builder.deregisterPacket(MoveEntityDeltaPacket.class);
         builder.registerPacket(MoveEntityDeltaPacket.class, MoveEntityDeltaSerializer_v419.INSTANCE, 111);
+
+        builder.registerPacket(ItemComponentPacket.class, ItemComponentSerializer_v419.INSTANCE, 162);
     }
 }

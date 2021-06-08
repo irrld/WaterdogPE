@@ -192,4 +192,8 @@ public class BedrockDefaultSession implements DownstreamSession {
     public BedrockClientSession getSession() {
         return this.session;
     }
+
+    public BedrockDefaultClient getClient() {
+        return this.client;
+    }
 }
