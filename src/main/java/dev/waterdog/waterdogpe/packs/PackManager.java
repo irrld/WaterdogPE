@@ -16,6 +16,7 @@
 package dev.waterdog.waterdogpe.packs;
 
 import com.google.common.base.Preconditions;
+import com.nukkitx.protocol.bedrock.data.ExperimentData;
 import com.nukkitx.protocol.bedrock.data.ResourcePackType;
 import com.nukkitx.protocol.bedrock.packet.*;
 import dev.waterdog.waterdogpe.ProxyServer;
@@ -152,6 +153,13 @@ public class PackManager {
         this.stackPacket.getResourcePacks().clear();
 
         this.stackPacket.setGameVersion("");
+
+        if (ProxyServer.getInstance().getConfiguration().getExperiments().size() != 0){
+            this.stackPacket.setExperimentsPreviouslyToggled(true);
+            for (String experiment : ProxyServer.getInstance().getConfiguration().getExperiments()) {
+                this.stackPacket.getExperiments().add(new ExperimentData(experiment,true));
+            }
+        }
 
         for (ResourcePack pack : this.packs.values()) {
             ResourcePacksInfoPacket.Entry infoEntry = new ResourcePacksInfoPacket.Entry(pack.getPackId().toString(), pack.getVersion().toString(),

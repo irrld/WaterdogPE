@@ -138,6 +138,10 @@ public class ProxyConfig extends YamlConfig {
     @Comment("If enabled, the client will be forced to accept server-sided resource packs")
     private boolean forceServerPacks = false;
 
+    @Path("experiments")
+    @Comment("List of experiments that will sent along with ResourcePackStackPacket")
+    private List<String> experiments  = new ArrayList<>();
+
     @Path("pack_cache_size")
     @Comment("You can set maximum pack size in MB to be cached.")
     private int packCacheSize = 16;
@@ -304,5 +308,13 @@ public class ProxyConfig extends YamlConfig {
 
     public int getIdleThreads() {
         return this.defaultIdleThreads < 1 ? Runtime.getRuntime().availableProcessors() : this.defaultIdleThreads;
+    }
+
+    public List<String> getExperiments() {
+        return experiments;
+    }
+
+    public void setExperiments(List<String> experiments) {
+        this.experiments = experiments;
     }
 }

@@ -22,6 +22,7 @@ import dev.waterdog.waterdogpe.network.protocol.ProtocolVersion;
 import dev.waterdog.waterdogpe.network.serverinfo.ServerInfo;
 import dev.waterdog.waterdogpe.network.session.DownstreamClient;
 import dev.waterdog.waterdogpe.network.session.DownstreamSession;
+import net.trpixel.enums.DownstreamClientConnectEvent;
 
 import java.net.InetSocketAddress;
 import java.util.concurrent.CompletableFuture;
@@ -47,7 +48,12 @@ public class BedrockDefaultClient implements DownstreamClient {
     @Override
     public CompletableFuture<DownstreamSession> connect(InetSocketAddress address, long timeout, TimeUnit unit) {
         Preconditions.checkNotNull(this.client, "Client was not initialized!");
-        return this.client.connect(address, timeout, unit).thenApply(downstream -> this.session = new BedrockDefaultSession(this, downstream));
+        return this.client.connect(address, timeout, unit).thenApply(downstream -> {
+            this.session = new BedrockDefaultSession(this, downstream);
+            DownstreamClientConnectEvent event = new DownstreamClientConnectEvent(this);
+            ProxyServer.getInstance().getEventManager().callEvent(event);
+            return this.session;
+        });
     }
 
     @Override
@@ -78,5 +84,9 @@ public class BedrockDefaultClient implements DownstreamClient {
     @Override
     public BedrockDefaultSession getSession() {
         return this.session;
+    }
+
+    public BedrockClient getClient() {
+        return this.client;
     }
 }

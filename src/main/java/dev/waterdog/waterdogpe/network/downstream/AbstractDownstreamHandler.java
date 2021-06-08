@@ -16,10 +16,7 @@
 package dev.waterdog.waterdogpe.network.downstream;
 
 import com.nukkitx.protocol.bedrock.handler.BedrockPacketHandler;
-import com.nukkitx.protocol.bedrock.packet.AvailableCommandsPacket;
-import com.nukkitx.protocol.bedrock.packet.ChangeDimensionPacket;
-import com.nukkitx.protocol.bedrock.packet.ChunkRadiusUpdatedPacket;
-import com.nukkitx.protocol.bedrock.packet.PlayStatusPacket;
+import com.nukkitx.protocol.bedrock.packet.*;
 import dev.waterdog.waterdogpe.command.Command;
 import dev.waterdog.waterdogpe.network.protocol.ProtocolVersion;
 import dev.waterdog.waterdogpe.network.session.DownstreamClient;
@@ -52,6 +49,18 @@ public abstract class AbstractDownstreamHandler implements BedrockPacketHandler 
             }
         }
         return packet.getCommands().size() > sizeBefore;
+    }
+
+    @Override
+    public boolean handle(ItemComponentPacket packet) {
+        // If client receives multiple ItemComponentPacket's it will crash
+        // so thats why we need to block it from sending multiple ItemComponentPackets from here
+
+        if (!player.acceptItemComponentPacket()) {
+            throw CancelSignalException.CANCEL;
+        }
+        player.setAcceptItemComponentPacket(false);
+        return false;
     }
 
     @Override
