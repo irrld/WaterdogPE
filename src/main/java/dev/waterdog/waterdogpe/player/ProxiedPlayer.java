@@ -270,7 +270,7 @@ public class ProxiedPlayer implements CommandSender {
 
             this.loginData.doLogin(downstream);
             this.getLogger().info("[" + this.getAddress() + "|" + this.getName() + "] -> Downstream [" + targetServer.getServerName() + "] has connected");
-            callback.whenComplete(ConnectState.CONNECTED, targetServer, null);
+            callback.completeWith(ConnectState.CONNECTED, targetServer, null);
         })).whenComplete((ignore, error) -> {
             if (error != null) {
                 this.connectFailure(null, targetServer, error, callback);
