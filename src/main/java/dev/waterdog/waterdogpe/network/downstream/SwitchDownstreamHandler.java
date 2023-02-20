@@ -196,7 +196,11 @@ public class SwitchDownstreamHandler extends AbstractDownstreamHandler {
             // Force client to exit first dim screen after one second
             PlayStatusPacket status = new PlayStatusPacket();
             status.setStatus(PlayStatusPacket.Status.PLAYER_SPAWN);
-            this.player.getProxy().getScheduler().scheduleDelayed(() -> this.player.sendPacket(status), 20 * 5);
+            this.player.getProxy().getScheduler().scheduleDelayed(() -> {
+                if (player.acceptPlayStatus()) {
+                    this.player.sendPacket(status);
+                }
+            }, 20 * 4);
         }
 
         this.getDownstream().onServerConnected(player);
