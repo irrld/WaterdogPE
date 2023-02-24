@@ -16,19 +16,19 @@
 package dev.waterdog.waterdogpe.network.protocol.codec;
 
 import com.nukkitx.protocol.bedrock.BedrockPacketCodec;
-import com.nukkitx.protocol.bedrock.v567.BedrockPacketHelper_v567patch;
+import com.nukkitx.protocol.bedrock.v568.BedrockPacketHelper_v568;
 import dev.waterdog.waterdogpe.network.protocol.ProtocolVersion;
 
 public class BedrockCodec568 extends BedrockCodec567 {
 
     @Override
     public ProtocolVersion getProtocol() {
-        return ProtocolVersion.MINECRAFT_PE_1_19_62;
+        return ProtocolVersion.MINECRAFT_PE_1_19_63;
     }
 
     @Override
     public void buildCodec(BedrockPacketCodec.Builder builder) {
         super.buildCodec(builder);
-        builder.helper(BedrockPacketHelper_v567patch.INSTANCE);
+        builder.helper(BedrockPacketHelper_v568.INSTANCE);
     }
 }
