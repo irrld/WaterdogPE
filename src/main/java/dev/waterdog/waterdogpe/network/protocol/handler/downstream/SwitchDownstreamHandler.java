@@ -186,10 +186,12 @@ public class SwitchDownstreamHandler extends AbstractDownstreamHandler {
                     rewriteData.getEntityId(), player.getProtocol(), true);
             // Force client to exit first dim screen after one second
             this.player.getProxy().getScheduler().scheduleDelayed(() -> {
-                PlayStatusPacket statusPacket = new PlayStatusPacket();
-                statusPacket.setStatus(PlayStatusPacket.Status.PLAYER_SPAWN);
-                this.player.getConnection().sendPacketImmediately(statusPacket);
-            }, 40);
+                if (this.player.acceptPlayStatus()) {
+                    PlayStatusPacket statusPacket = new PlayStatusPacket();
+                    statusPacket.setStatus(PlayStatusPacket.Status.PLAYER_SPAWN);
+                    this.player.getConnection().sendPacketImmediately(statusPacket);
+                }
+            }, 20 * 2);
         } else if (newDimension == packet.getDimensionId()) {
             // Transfer between different dimensions
             injectPosition(this.player.getConnection(), packet.getPlayerPosition(), packet.getRotation(), rewriteData.getEntityId());
