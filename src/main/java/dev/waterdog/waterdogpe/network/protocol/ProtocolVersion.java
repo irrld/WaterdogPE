@@ -81,7 +81,11 @@ public enum ProtocolVersion {
     MINECRAFT_PE_1_19_40(557, Bedrock_v557.V557_CODEC, 11),
     MINECRAFT_PE_1_19_50(560, Bedrock_v560.V560_CODEC, 11),
     MINECRAFT_PE_1_19_60(567, Bedrock_v567.V567_CODEC, 11),
-    MINECRAFT_PE_1_19_63(568, Bedrock_v568.V568_CODEC, 11);
+    MINECRAFT_PE_1_19_63(568, Bedrock_v568.V568_CODEC,
+    MINECRAFT_PE_1_19_70(575, Bedrock_v568.V568_CODEC.toBuilder()
+            .minecraftVersion("1.19.70")
+            .protocolVersion(575)
+            .build(), 11);
 
     private static final ProtocolVersion[] VALUES = values();
 
