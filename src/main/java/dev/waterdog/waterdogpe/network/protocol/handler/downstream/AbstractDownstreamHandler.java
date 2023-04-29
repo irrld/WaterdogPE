@@ -23,9 +23,13 @@ import dev.waterdog.waterdogpe.network.protocol.handler.ProxyPacketHandler;
 import dev.waterdog.waterdogpe.network.protocol.rewrite.RewriteMaps;
 import dev.waterdog.waterdogpe.player.ProxiedPlayer;
 import dev.waterdog.waterdogpe.network.protocol.Signals;
+import org.cloudburstmc.protocol.bedrock.data.command.CommandData;
+import org.cloudburstmc.protocol.bedrock.data.command.CommandEnumConstraint;
+import org.cloudburstmc.protocol.bedrock.data.command.CommandEnumData;
 import org.cloudburstmc.protocol.bedrock.packet.*;
 import org.cloudburstmc.protocol.common.PacketSignal;
 
+import java.util.*;
 import java.util.function.Consumer;
 
 import static dev.waterdog.waterdogpe.network.protocol.Signals.CANCEL;
@@ -79,7 +83,30 @@ public abstract class AbstractDownstreamHandler implements ProxyPacketHandler {
                 packet.getCommands().add(command.getCommandData());
             }
         }
-        return Signals.fromBoolean(packet.getCommands().size() > sizeBefore);
+
+        if (packet.getCommands().size() == sizeBefore) {
+            return PacketSignal.UNHANDLED;
+        }
+
+        // Some server commands are missing aliases, which protocol lib doesn't like
+        ListIterator<CommandData> iterator = packet.getCommands().listIterator();
+        while (iterator.hasNext()) {
+            CommandData command = iterator.next();
+            if (command.getAliases() != null) {
+                continue;
+            }
+
+            Map<String, Set<CommandEnumConstraint>> aliases = new LinkedHashMap<>();
+            aliases.put(command.getName(), EnumSet.of(CommandEnumConstraint.ALLOW_ALIASES));
+
+            iterator.set(new CommandData(command.getName(),
+                    command.getDescription(),
+                    command.getFlags(),
+                    command.getPermission(),
+                    new CommandEnumData(command.getName() + "_aliases", aliases, false),
+                    command.getOverloads()));
+        }
+        return PacketSignal.HANDLED;
     }
 
     @Override
@@ -105,20 +132,17 @@ public abstract class AbstractDownstreamHandler implements ProxyPacketHandler {
     protected PacketSignal onPlayStatus(PlayStatusPacket packet, Consumer<String> failedTask, ClientConnection connection) {
         String message;
         switch (packet.getStatus()) {
-            case LOGIN_SUCCESS:
+            case LOGIN_SUCCESS -> {
                 if (this.player.getProtocol().isAfterOrEqual(ProtocolVersion.MINECRAFT_PE_1_12)) {
                     connection.sendPacket(this.player.getLoginData().getCachePacket());
                 }
                 return Signals.CANCEL;
-            case LOGIN_FAILED_CLIENT_OLD:
-            case LOGIN_FAILED_SERVER_OLD:
-                message = "Incompatible version";
-                break;
-            case FAILED_SERVER_FULL_SUB_CLIENT:
-                message = "Server is full";
-                break;
-            default:
+            }
+            case LOGIN_FAILED_CLIENT_OLD, LOGIN_FAILED_SERVER_OLD -> message = "Incompatible version";
+            case FAILED_SERVER_FULL_SUB_CLIENT -> message = "Server is full";
+            default -> {
                 return PacketSignal.UNHANDLED;
+            }
         }
 
         failedTask.accept(message);
