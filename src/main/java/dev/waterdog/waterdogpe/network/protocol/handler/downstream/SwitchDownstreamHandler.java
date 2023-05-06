@@ -206,7 +206,8 @@ public class SwitchDownstreamHandler extends AbstractDownstreamHandler {
                 PlayStatusPacket statusPacket = new PlayStatusPacket();
                 statusPacket.setStatus(PlayStatusPacket.Status.PLAYER_SPAWN);
                 this.player.getConnection().sendPacketImmediately(statusPacket);
-            }, 20 * 2);
+                transferCallback.onTransferPhase1Completed();
+            }, 20);
         } else if (newDimension == packet.getDimensionId()) {
             // Transfer between different dimensions
             injectPosition(this.player.getConnection(), packet.getPlayerPosition(), packet.getRotation(), rewriteData.getEntityId());
