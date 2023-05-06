@@ -138,4 +138,12 @@ public class TransferCallback {
     public TransferPhase getPhase() {
         return this.transferPhase;
     }
+
+    private int getChunkRadius() {
+        int chunkRadius = this.player.getLoginData().getChunkRadius().getRadius();
+        if (chunkRadius >= 12) {
+            return chunkRadius - 4;
+        }
+        return chunkRadius - 2;
+    }
 }
