@@ -289,7 +289,7 @@ public class ProxiedPlayer implements CommandSender {
             if (connection.isConnected()) {
                 connection.disconnect();
             }
-            callback.whenComplete(ConnectState.CANCELLED, targetServer, null);
+            callback.completeWith(ConnectState.CANCELLED, targetServer, null);
             return;
         }
 
