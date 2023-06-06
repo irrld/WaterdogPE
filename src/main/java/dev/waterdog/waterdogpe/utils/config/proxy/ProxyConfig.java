@@ -185,6 +185,10 @@ public class ProxyConfig extends YamlConfig {
     @Comment("List of experiments that will sent along with ResourcePackStackPacket")
     private List<String> experiments  = new ArrayList<>();
 
+    @Path("enable_error_reporting")
+    @Comment("Enables anonymous error reporting using bugsnag. This allows the WaterdogPE team to automatically collect issues occurring on WaterdogPE instances.")
+    private boolean enableAnonymousErrorReporting = true;
+
     public ProxyConfig(File file) {
         this.CONFIG_HEADER = new String[]{"Waterdog Main Configuration file", "Configure your desired network settings here."};
         this.CONFIG_FILE = file;
