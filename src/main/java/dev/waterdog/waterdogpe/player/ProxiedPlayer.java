@@ -16,6 +16,7 @@
 package dev.waterdog.waterdogpe.player;
 
 import dev.waterdog.waterdogpe.network.connection.codec.compression.CompressionAlgorithm;
+import dev.waterdog.waterdogpe.network.connection.handler.ReconnectReason;
 import dev.waterdog.waterdogpe.network.connection.peer.BedrockServerSession;
 import dev.waterdog.waterdogpe.network.connection.client.ClientConnection;
 import dev.waterdog.waterdogpe.network.protocol.handler.PluginPacketHandler;
@@ -330,7 +331,7 @@ public class ProxiedPlayer implements CommandSender {
 
         this.getLogger().error("[{}|{}] Unable to connect to downstream {}", this.getAddress(), this.getName(), targetServer.getServerName(), error);
         String exceptionMessage = Objects.requireNonNullElse(error.getLocalizedMessage(), error.getClass().getSimpleName());
-        if (this.sendToFallback(targetServer, exceptionMessage)) {
+        if (this.sendToFallback(targetServer, ReconnectReason.EXCEPTION, exceptionMessage)) {
             callback.completeWith(ConnectState.FALLBACK, targetServer, error);
         } else {
             callback.completeWith(ConnectState.FAILED, targetServer, error);
@@ -392,20 +393,26 @@ public class ProxiedPlayer implements CommandSender {
         this.getLogger().info("[{}|{}] -> Upstream has disconnected: {}", this.getAddress(), this.getName(), reason);
     }
 
+    public boolean sendToFallback(ServerInfo oldServer, String message) {
+        return this.sendToFallback(oldServer, ReconnectReason.UNKNOWN, message);
+    }
+
     /**
      * Send player to fallback server if any exists.
      *
      * @param oldServer server from which was player disconnected.
      * @param reason    disconnected reason.
+     * @param message    disconnected message.
      * @return if connection to downstream was successful.
      */
-    public boolean sendToFallback(ServerInfo oldServer, String reason) {
+    public boolean sendToFallback(ServerInfo oldServer, ReconnectReason reason, String message) {
         if (!this.isConnected()) {
             return false;
         }
 
-        ServerInfo fallbackServer = this.proxy.getReconnectHandler().getFallbackServer(this, oldServer, reason);
+        ServerInfo fallbackServer = this.proxy.getReconnectHandler().getFallbackServer(this, oldServer, reason, message);
         if (fallbackServer != null && fallbackServer != this.getServerInfo()) {
+            this.getLogger().debug("[{}] Connecting to fallback server {} with reason {}", this.getName(), fallbackServer.getServerName(), reason.getName());
             this.connect(fallbackServer);
             return true;
         }
@@ -415,7 +422,7 @@ public class ProxiedPlayer implements CommandSender {
     // TODO: I'm not super happy with this, but moving it to a netty handler would mean anyone who implements own handler,
     //  has to copy that piece of code. PLS: find a better place for this two methods
     public final void onDownstreamTimeout(ServerInfo serverInfo) {
-        if (!this.sendToFallback(serverInfo, "Downstream Timeout")) {
+        if (!this.sendToFallback(serverInfo, ReconnectReason.TIMEOUT, "Downstream Timeout")) {
             this.disconnect(new TranslationContainer("waterdog.downstream.down", serverInfo.getServerName(), "Timeout"));
         }
     }
