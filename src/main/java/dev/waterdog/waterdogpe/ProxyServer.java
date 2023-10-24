@@ -198,6 +198,11 @@ public class ProxyServer {
         this.boot();
     }
 
+    public void reloadPackManager() {
+        this.packManager.clear();
+        this.packManager.loadPacks(this.packsPath);
+    }
+
     public static ProxyServer getInstance() {
         return instance;
     }

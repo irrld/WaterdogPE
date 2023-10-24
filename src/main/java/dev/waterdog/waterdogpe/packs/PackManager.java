@@ -52,6 +52,11 @@ public class PackManager {
         this.proxy = proxy;
     }
 
+    public void clear() {
+        this.packs.clear();
+        this.packsByIdVer.clear();
+    }
+
     public void loadPacks(Path packsDirectory) {
         Preconditions.checkNotNull(packsDirectory, "Packs directory can not be null!");
         Preconditions.checkArgument(Files.isDirectory(packsDirectory), packsDirectory + " must be directory!");
@@ -160,7 +165,7 @@ public class PackManager {
 
         this.stackPacket.setGameVersion("");
 
-        if (ProxyServer.getInstance().getConfiguration().getExperiments().size() != 0){
+        if (!ProxyServer.getInstance().getConfiguration().getExperiments().isEmpty()){
             this.stackPacket.setExperimentsPreviouslyToggled(true);
             for (String experiment : ProxyServer.getInstance().getConfiguration().getExperiments()) {
                 this.stackPacket.getExperiments().add(new ExperimentData(experiment,true));
