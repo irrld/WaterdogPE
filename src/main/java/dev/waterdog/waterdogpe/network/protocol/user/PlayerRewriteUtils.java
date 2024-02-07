@@ -16,7 +16,7 @@
 package dev.waterdog.waterdogpe.network.protocol.user;
 
 import dev.waterdog.waterdogpe.network.connection.ProxiedConnection;
-import dev.waterdog.waterdogpe.network.connection.codec.BedrockBatchWrapper;
+import dev.waterdog.waterdogpe.network.connection.codec.batch.BatchFlags;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import org.cloudburstmc.math.vector.Vector2f;
 import org.cloudburstmc.math.vector.Vector3f;
@@ -26,6 +26,7 @@ import org.cloudburstmc.protocol.bedrock.data.entity.EntityDataMap;
 import org.cloudburstmc.protocol.bedrock.data.entity.EntityDataTypes;
 import org.cloudburstmc.protocol.bedrock.data.entity.EntityFlag;
 import org.cloudburstmc.protocol.bedrock.data.entity.EntityLinkData;
+import org.cloudburstmc.protocol.bedrock.netty.BedrockBatchWrapper;
 import org.cloudburstmc.protocol.bedrock.packet.*;
 import dev.waterdog.waterdogpe.network.protocol.ProtocolVersion;
 import io.netty.buffer.ByteBuf;
@@ -203,11 +204,13 @@ public class PlayerRewriteUtils {
         session.sendPacket(packet);
     }
 
-    public static void injectRemoveAllEffects(ProxiedConnection session, long runtimeId) {
+    public static void injectRemoveAllEffects(ProxiedConnection session, long runtimeId, ProtocolVersion version) {
         if (session == null || !session.isConnected()) {
             return;
         }
-        for (int i = 0; i < 28; i++) {
+
+        int effectsCount = version.isAfter(ProtocolVersion.MINECRAFT_PE_1_19_0) ? 30 : 28;
+        for (int i = 0; i < effectsCount; i++) {
             injectRemoveEntityEffect(session, runtimeId, i);
         }
         SetEntityDataPacket packet = new SetEntityDataPacket();
@@ -307,8 +310,9 @@ public class PlayerRewriteUtils {
             }
         }
 
-        session.sendPacket(BedrockBatchWrapper.create(session.getSubClientId(), packets.toArray(new BedrockPacket[0]))
-                .skipQueue(true));
+        BedrockBatchWrapper wrapper = BedrockBatchWrapper.create(session.getSubClientId(), packets.toArray(new BedrockPacket[0]));
+        wrapper.setFlag(BatchFlags.SKIP_QUEUE);;
+        session.sendPacket(wrapper);
     }
 
     public static LevelChunkPacket injectEmptyChunk(int chunkX, int chunkZ, int dimension, ProtocolVersion version) {
@@ -316,6 +320,7 @@ public class PlayerRewriteUtils {
         packet.setChunkX(chunkX);
         packet.setChunkZ(chunkZ);
         packet.setCachingEnabled(false);
+        packet.setDimension(dimension);
         if (version.isAfterOrEqual(ProtocolVersion.MINECRAFT_PE_1_18_30)) {
             packet.setSubChunksLength(1);
             switch (dimension) {
