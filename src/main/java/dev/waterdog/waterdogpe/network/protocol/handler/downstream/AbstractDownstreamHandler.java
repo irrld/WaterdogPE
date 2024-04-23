@@ -32,6 +32,7 @@ import org.cloudburstmc.protocol.common.PacketSignal;
 import java.util.*;
 import java.util.function.Consumer;
 
+import static dev.waterdog.waterdogpe.network.protocol.Signals.CANCEL;
 import static dev.waterdog.waterdogpe.network.protocol.Signals.mergeSignals;
 
 public abstract class AbstractDownstreamHandler implements ProxyPacketHandler {
@@ -59,6 +60,15 @@ public abstract class AbstractDownstreamHandler implements ProxyPacketHandler {
                     ProxyPacketHandler.super.doPacketRewrite(packet));
         }
         return ProxyPacketHandler.super.doPacketRewrite(packet);
+    }
+
+    @Override
+    public PacketSignal handle(ItemComponentPacket packet) {
+        if (!player.acceptItemComponentPacket()) {
+            return Signals.CANCEL;
+        }
+        player.setAcceptItemComponentPacket(false);
+        return PacketSignal.UNHANDLED;
     }
 
     @Override

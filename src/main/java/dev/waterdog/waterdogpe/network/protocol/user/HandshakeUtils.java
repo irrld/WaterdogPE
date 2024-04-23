@@ -183,6 +183,13 @@ public class HandshakeUtils {
             xboxAuth = false;
         }
         JsonObject clientData = HandshakeUtils.parseClientData(extraDataJwt, extraData, session);
+
+        if (xboxAuth){
+            ProxyConfig config = ProxyServer.getInstance().getConfiguration();
+            if (config.useLoginExtras()) {
+                clientData.addProperty("Waterdog_Auth", true);
+            }
+        }
         return new HandshakeEntry(identityPublicKey, clientData, extraData, xboxAuth, protocol);
     }
 

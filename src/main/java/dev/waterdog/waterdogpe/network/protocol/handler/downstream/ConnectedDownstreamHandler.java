@@ -96,7 +96,8 @@ public class ConnectedDownstreamHandler extends AbstractDownstreamHandler {
         if (this.player.sendToFallback(this.connection.getServerInfo(), ReconnectReason.SERVER_KICK, packet.getKickMessage())) {
             return Signals.CANCEL;
         }
-        this.player.disconnect(new TranslationContainer("waterdog.downstream.kicked", packet.getKickMessage()));
+        this.player.disconnect(new TranslationContainer(packet.getKickMessage()));
+//        this.player.disconnect(new TranslationContainer("waterdog.downstream.kicked", packet.getKickMessage()));
         return Signals.CANCEL;
     }
 }

@@ -16,6 +16,7 @@
 package dev.waterdog.waterdogpe.packs;
 
 import io.netty.buffer.Unpooled;
+import org.cloudburstmc.protocol.bedrock.data.ExperimentData;
 import org.cloudburstmc.protocol.bedrock.data.ResourcePackType;
 import org.cloudburstmc.protocol.bedrock.packet.*;
 import dev.waterdog.waterdogpe.ProxyServer;
@@ -35,7 +36,7 @@ import java.util.UUID;
 
 public class PackManager {
 
-    private static final long CHUNK_SIZE = 102400;
+    private static final long CHUNK_SIZE = 1024*100;
 
     private static final PathMatcher ZIP_PACK_MATCHER = FileSystems.getDefault().getPathMatcher("glob:**.{zip,mcpack}");
     private static final ResourcePackStackPacket.Entry EDU_PACK = new ResourcePackStackPacket.Entry("0fba4063-dba1-4281-9b89-ff9390653530", "1.0.0", "");
@@ -49,6 +50,11 @@ public class PackManager {
 
     public PackManager(ProxyServer proxy) {
         this.proxy = proxy;
+    }
+
+    public void clear() {
+        this.packs.clear();
+        this.packsByIdVer.clear();
     }
 
     public void loadPacks(Path packsDirectory) {
@@ -158,6 +164,13 @@ public class PackManager {
         this.stackPacket.getResourcePacks().clear();
 
         this.stackPacket.setGameVersion("");
+
+        if (!ProxyServer.getInstance().getConfiguration().getExperiments().isEmpty()){
+            this.stackPacket.setExperimentsPreviouslyToggled(true);
+            for (String experiment : ProxyServer.getInstance().getConfiguration().getExperiments()) {
+                this.stackPacket.getExperiments().add(new ExperimentData(experiment,true));
+            }
+        }
 
         for (ResourcePack pack : this.packs.values()) {
             ResourcePacksInfoPacket.Entry infoEntry = new ResourcePacksInfoPacket.Entry(pack.getPackId().toString(), pack.getVersion().toString(),

@@ -14,6 +14,8 @@
  */
 
 package dev.waterdog.waterdogpe.network.protocol.rewrite;
+import dev.waterdog.waterdogpe.ProxyServer;
+import dev.waterdog.waterdogpe.event.defaults.PlayerListPacketReceiveEvent;
 import org.cloudburstmc.protocol.bedrock.data.ScoreInfo;
 import org.cloudburstmc.protocol.bedrock.data.entity.EntityLinkData;
 import org.cloudburstmc.protocol.bedrock.packet.*;
@@ -74,6 +76,8 @@ public class EntityTracker implements BedrockPacketHandler {
 
     @Override
     public PacketSignal handle(PlayerListPacket packet) {
+        var event = new PlayerListPacketReceiveEvent(player, packet);
+        ProxyServer.getInstance().getEventManager().callEvent(event);
         List<PlayerListPacket.Entry> entries = packet.getEntries();
         for (PlayerListPacket.Entry entry : entries) {
             if (packet.getAction() == PlayerListPacket.Action.ADD) {
@@ -82,7 +86,7 @@ public class EntityTracker implements BedrockPacketHandler {
                 this.player.getPlayers().remove(entry.getUuid());
             }
         }
-        return PacketSignal.UNHANDLED;
+        return PacketSignal.HANDLED;
     }
 
     @Override
