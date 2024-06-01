@@ -38,12 +38,12 @@
 
     <distributionManagement>
         <repository>
-            <id>waterdog-releases</id>
-            <url>https://repo.waterdog.dev/releases</url>
+            <id>nexus</id>
+            <url>https://repo.teon.llc/repository/maven/</url>
         </repository>
         <snapshotRepository>
-            <id>waterdog-snapshots</id>
-            <url>https://repo.waterdog.dev/snapshots</url>
+            <id>nexus</id>
+            <url>https://repo.teon.llc/repository/maven/</url>
         </snapshotRepository>
     </distributionManagement>
 
