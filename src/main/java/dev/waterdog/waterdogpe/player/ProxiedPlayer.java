@@ -373,10 +373,6 @@ public class ProxiedPlayer implements CommandSender {
         PlayerDisconnectedEvent event = new PlayerDisconnectedEvent(this, reason);
         this.proxy.getEventManager().callEvent(event);
 
-        if (this.connection != null && this.connection.isConnected()) {
-            this.connection.disconnect(reason);
-        }
-
         if (this.clientConnection != null) {
             this.clientConnection.getServerInfo().removeConnection(this.clientConnection);
             this.clientConnection.disconnect();
@@ -385,6 +381,10 @@ public class ProxiedPlayer implements CommandSender {
         ClientConnection connection = this.getPendingConnection();
         if (connection != null) {
             connection.disconnect();
+        }
+
+        if (this.connection != null && this.connection.isConnected()) {
+            this.connection.disconnect(reason);
         }
 
         this.proxy.getPlayerManager().removePlayer(this);
