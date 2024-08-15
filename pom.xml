@@ -161,6 +161,29 @@
         </dependency>
         <dependency>
             <groupId>org.cloudburstmc.protocol</groupId>
+            <artifactId>common</artifactId>
+            <version>${protocol.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>io.netty</groupId>
+                    <artifactId>netty-buffer</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.bitbucket.b_c</groupId>
+            <artifactId>jose4j</artifactId>
+            <version>0.9.6</version>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.cloudburstmc</groupId>
+            <artifactId>nbt</artifactId>
+            <version>3.0.3.Final</version>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.cloudburstmc.protocol</groupId>
             <artifactId>bedrock-codec</artifactId>
             <version>${protocol.version}</version>
             <exclusions>
