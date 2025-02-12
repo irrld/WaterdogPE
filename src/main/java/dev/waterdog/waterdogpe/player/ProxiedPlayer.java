@@ -102,7 +102,8 @@ public class ProxiedPlayer implements CommandSender {
      */
     private volatile boolean acceptResourcePacks = true;
     /**
-     * Used to determine if proxy can send item component packet to player.
+     * Used to determine if proxy can send ItemComponentPacket to player.
+     * Client will crash if ItemComponentPacket is sent twice.
      */
     private volatile boolean acceptItemComponentPacket = true;
     /**
@@ -927,16 +928,16 @@ public class ProxiedPlayer implements CommandSender {
         return this.acceptPlayStatus;
     }
 
+    public boolean acceptResourcePacks() {
+        return this.acceptResourcePacks;
+    }
+
     public void setAcceptItemComponentPacket(boolean acceptItemComponentPacket) {
         this.acceptItemComponentPacket = acceptItemComponentPacket;
     }
 
     public boolean acceptItemComponentPacket() {
         return acceptItemComponentPacket;
-    }
-
-    public boolean acceptResourcePacks() {
-        return this.acceptResourcePacks;
     }
 
     public CompressionType getCompression() {
