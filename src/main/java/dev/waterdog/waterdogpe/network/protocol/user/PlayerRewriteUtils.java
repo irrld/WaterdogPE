@@ -266,8 +266,7 @@ public class PlayerRewriteUtils {
         packet.setPosition(position);
         packet.setRuntimeEntityId(runtimeId);
         packet.setRotation(rotation.toVector3(rotation.getY()));
-        packet.setMode(MovePlayerPacket.Mode.TELEPORT);
-        packet.setTeleportationCause(MovePlayerPacket.TeleportationCause.UNKNOWN);
+        packet.setMode(MovePlayerPacket.Mode.RESPAWN);
         session.sendPacketImmediately(packet);
     }
 
