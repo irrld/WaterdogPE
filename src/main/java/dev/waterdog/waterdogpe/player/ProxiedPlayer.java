@@ -15,7 +15,7 @@
 
 package dev.waterdog.waterdogpe.player;
 
-import dev.waterdog.waterdogpe.network.connection.codec.compression.CompressionAlgorithm;
+import dev.waterdog.waterdogpe.network.connection.codec.compression.CompressionType;
 import dev.waterdog.waterdogpe.network.connection.handler.ReconnectReason;
 import dev.waterdog.waterdogpe.network.connection.peer.BedrockServerSession;
 import dev.waterdog.waterdogpe.network.connection.client.ClientConnection;
@@ -60,9 +60,10 @@ public class ProxiedPlayer implements CommandSender {
     private final ProxyServer proxy;
 
     private final BedrockServerSession connection;
-    private final CompressionAlgorithm compression;
+    private final CompressionType compression;
 
     private final AtomicBoolean disconnected = new AtomicBoolean(false);
+    private final AtomicBoolean loginCalled = new AtomicBoolean(false);
     private final AtomicBoolean loginCompleted = new AtomicBoolean(false);
     private volatile String disconnectReason;
 
@@ -110,15 +111,13 @@ public class ProxiedPlayer implements CommandSender {
      */
     private final Collection<PluginPacketHandler> pluginPacketHandlers = new ObjectArrayList<>();
 
-    public ProxiedPlayer(ProxyServer proxy, BedrockServerSession session, CompressionAlgorithm compression, LoginData loginData) {
+    public ProxiedPlayer(ProxyServer proxy, BedrockServerSession session, CompressionType compression, LoginData loginData) {
         this.proxy = proxy;
         this.connection = session;
         this.compression = compression;
         this.loginData = loginData;
         this.rewriteMaps = new RewriteMaps(this);
         this.proxy.getPlayerManager().subscribePermissions(this);
-
-        this.connection.getPeer().setCompressionLevel(this.getProxy().getConfiguration().getUpstreamCompression());
         this.connection.addDisconnectListener(this::disconnect);
         this.rewriteData.setCodecHelper(session.getPeer().getCodecHelper());
     }
@@ -127,6 +126,10 @@ public class ProxiedPlayer implements CommandSender {
      * Called after sending LOGIN_SUCCESS in PlayStatusPacket.
      */
     public void initPlayer() {
+        if (!this.loginCalled.compareAndSet(false, true)) {
+            return;
+        }
+
         PlayerLoginEvent event = new PlayerLoginEvent(this);
         this.proxy.getEventManager().callEvent(event).whenComplete((futureEvent, error) -> {
             this.loginCompleted.set(true);
@@ -360,7 +363,7 @@ public class ProxiedPlayer implements CommandSender {
      * @param reason The disconnect reason the player will see on his disconnect screen (Supports Color Codes)
      */
     public void disconnect(String reason) {
-        if (!this.loginCompleted.get()) {
+        if (this.loginCalled.get() && !this.loginCompleted.get()) {
             // Wait until PlayerLoginEvent completes
             this.disconnectReason = reason;
             return;
@@ -375,10 +378,6 @@ public class ProxiedPlayer implements CommandSender {
         PlayerDisconnectedEvent event = new PlayerDisconnectedEvent(this, reason);
         this.proxy.getEventManager().callEvent(event);
 
-        if (this.connection != null && this.connection.isConnected()) {
-            this.connection.disconnect(reason);
-        }
-
         if (this.clientConnection != null) {
             this.clientConnection.getServerInfo().removeConnection(this.clientConnection);
             this.clientConnection.disconnect();
@@ -387,6 +386,10 @@ public class ProxiedPlayer implements CommandSender {
         ClientConnection connection = this.getPendingConnection();
         if (connection != null) {
             connection.disconnect();
+        }
+
+        if (this.connection != null && this.connection.isConnected()) {
+            this.connection.disconnect(reason);
         }
 
         this.proxy.getPlayerManager().removePlayer(this);
@@ -936,7 +939,7 @@ public class ProxiedPlayer implements CommandSender {
         return this.acceptResourcePacks;
     }
 
-    public CompressionAlgorithm getCompression() {
+    public CompressionType getCompression() {
         return this.compression;
     }
 

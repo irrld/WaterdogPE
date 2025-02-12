@@ -52,6 +52,11 @@ public class PackManager {
         this.proxy = proxy;
     }
 
+    public void clear() {
+        this.packs.clear();
+        this.packsByIdVer.clear();
+    }
+
     public void loadPacks(Path packsDirectory) {
         Preconditions.checkNotNull(packsDirectory, "Packs directory can not be null!");
         Preconditions.checkArgument(Files.isDirectory(packsDirectory), packsDirectory + " must be directory!");
@@ -150,6 +155,8 @@ public class PackManager {
 
     public void rebuildPackets() {
         this.packsInfoPacket.setForcedToAccept(this.proxy.getConfiguration().isForceServerPacks());
+        this.packsInfoPacket.setWorldTemplateId(UUID.randomUUID());
+        this.packsInfoPacket.setWorldTemplateVersion("");
         this.stackPacket.setForcedToAccept(this.proxy.getConfiguration().isOverwriteClientPacks());
 
         this.packsInfoPacket.getBehaviorPackInfos().clear();
@@ -160,7 +167,7 @@ public class PackManager {
 
         this.stackPacket.setGameVersion("");
 
-        if (ProxyServer.getInstance().getConfiguration().getExperiments().size() != 0){
+        if (!ProxyServer.getInstance().getConfiguration().getExperiments().isEmpty()){
             this.stackPacket.setExperimentsPreviouslyToggled(true);
             for (String experiment : ProxyServer.getInstance().getConfiguration().getExperiments()) {
                 this.stackPacket.getExperiments().add(new ExperimentData(experiment,true));
@@ -168,8 +175,8 @@ public class PackManager {
         }
 
         for (ResourcePack pack : this.packs.values()) {
-            ResourcePacksInfoPacket.Entry infoEntry = new ResourcePacksInfoPacket.Entry(pack.getPackId().toString(), pack.getVersion().toString(),
-                    pack.getPackSize(), pack.getContentKey(), "", pack.getContentKey().equals("") ? "" : pack.getPackId().toString(), false, false);
+            ResourcePacksInfoPacket.Entry infoEntry = new ResourcePacksInfoPacket.Entry(pack.getPackId(), pack.getVersion().toString(),
+                    pack.getPackSize(), pack.getContentKey(), "", pack.getContentKey().equals("") ? "" : pack.getPackId().toString(), false, false, false, null);
             ResourcePackStackPacket.Entry stackEntry = new ResourcePackStackPacket.Entry(pack.getPackId().toString(), pack.getVersion().toString(), "");
             if (pack.getType().equals(ResourcePack.TYPE_RESOURCES)) {
                 this.packsInfoPacket.getResourcePackInfos().add(infoEntry);

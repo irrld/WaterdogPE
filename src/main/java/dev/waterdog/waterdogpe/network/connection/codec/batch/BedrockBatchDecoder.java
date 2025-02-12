@@ -15,11 +15,11 @@
 
 package dev.waterdog.waterdogpe.network.connection.codec.batch;
 
-import dev.waterdog.waterdogpe.network.connection.codec.BedrockBatchWrapper;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageDecoder;
+import org.cloudburstmc.protocol.bedrock.netty.BedrockBatchWrapper;
 import org.cloudburstmc.protocol.bedrock.netty.BedrockPacketWrapper;
 import org.cloudburstmc.protocol.common.util.VarInts;
 
@@ -39,7 +39,7 @@ public class BedrockBatchDecoder extends MessageToMessageDecoder<BedrockBatchWra
         while (buffer.isReadable()) {
             int packetLength = VarInts.readUnsignedInt(buffer);
 
-            BedrockPacketWrapper wrapper = new BedrockPacketWrapper();
+            BedrockPacketWrapper wrapper = BedrockPacketWrapper.create();
             wrapper.setPacketBuffer(buffer.readRetainedSlice(packetLength));
             msg.getPackets().add(wrapper);
         }

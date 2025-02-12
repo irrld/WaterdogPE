@@ -15,13 +15,13 @@
 
 package dev.waterdog.waterdogpe.network.connection.codec.client;
 
-import dev.waterdog.waterdogpe.network.connection.codec.BedrockBatchWrapper;
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import io.netty.util.ReferenceCountUtil;
 import io.netty.util.concurrent.ScheduledFuture;
 import io.netty.util.internal.PlatformDependent;
+import org.cloudburstmc.protocol.bedrock.netty.BedrockBatchWrapper;
 import org.cloudburstmc.protocol.bedrock.netty.BedrockPacketWrapper;
 import org.cloudburstmc.protocol.bedrock.packet.BedrockPacket;
 
@@ -62,7 +62,7 @@ public class ClientPacketQueue extends ChannelDuplexHandler {
     @Override
     public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
         if (msg instanceof BedrockPacket packet) {
-            this.packetQueue.add(new BedrockPacketWrapper(0, 0, 0, ReferenceCountUtil.retain(packet), null));
+            this.packetQueue.add(BedrockPacketWrapper.create(0, 0, 0, ReferenceCountUtil.retain(packet), null));
         } else if (msg instanceof BedrockPacketWrapper packet) {
             this.packetQueue.add(ReferenceCountUtil.retain(packet));
         } else if (msg instanceof BedrockBatchWrapper) {

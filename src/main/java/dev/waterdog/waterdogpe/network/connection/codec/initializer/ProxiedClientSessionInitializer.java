@@ -16,7 +16,6 @@
 package dev.waterdog.waterdogpe.network.connection.codec.initializer;
 
 import dev.waterdog.waterdogpe.network.NetworkMetrics;
-import dev.waterdog.waterdogpe.network.PacketDirection;
 import dev.waterdog.waterdogpe.network.connection.client.BedrockClientConnection;
 import dev.waterdog.waterdogpe.network.connection.client.ClientConnection;
 import dev.waterdog.waterdogpe.network.connection.codec.batch.BedrockBatchDecoder;
@@ -24,7 +23,8 @@ import dev.waterdog.waterdogpe.network.connection.codec.batch.BedrockBatchEncode
 import dev.waterdog.waterdogpe.network.connection.codec.batch.FrameIdCodec;
 import dev.waterdog.waterdogpe.network.connection.codec.client.ClientEventHandler;
 import dev.waterdog.waterdogpe.network.connection.codec.client.ClientPacketQueue;
-import dev.waterdog.waterdogpe.network.connection.codec.compression.CompressionAlgorithm;
+import dev.waterdog.waterdogpe.network.connection.codec.compression.CompressionType;
+import dev.waterdog.waterdogpe.network.connection.codec.compression.ProxiedCompressionCodec;
 import dev.waterdog.waterdogpe.network.connection.codec.packet.BedrockPacketCodec;
 import dev.waterdog.waterdogpe.network.serverinfo.ServerInfo;
 import dev.waterdog.waterdogpe.player.ProxiedPlayer;
@@ -32,8 +32,9 @@ import io.netty.channel.*;
 import io.netty.util.concurrent.Promise;
 import lombok.RequiredArgsConstructor;
 import org.cloudburstmc.netty.channel.raknet.RakChannel;
+import org.cloudburstmc.netty.channel.raknet.config.RakChannelMetrics;
 import org.cloudburstmc.netty.channel.raknet.config.RakChannelOption;
-import org.cloudburstmc.netty.channel.raknet.config.RakMetrics;
+import org.cloudburstmc.protocol.bedrock.PacketDirection;
 import org.cloudburstmc.protocol.bedrock.netty.codec.compression.CompressionCodec;
 
 import static dev.waterdog.waterdogpe.network.connection.codec.initializer.ProxiedSessionInitializer.*;
@@ -52,22 +53,22 @@ public class ProxiedClientSessionInitializer extends ChannelInitializer<Channel>
     @Override
     protected void initChannel(Channel channel) throws Exception {
         int rakVersion = this.player.getProtocol().getRaknetVersion();
-        CompressionAlgorithm compression = this.player.getProxy().getConfiguration().getCompression();
+        CompressionType compression = this.player.getProxy().getConfiguration().getCompression();
 
-        channel.attr(PacketDirection.ATTRIBUTE).set(PacketDirection.FROM_SERVER);
+        channel.attr(PacketDirection.ATTRIBUTE).set(PacketDirection.SERVER_BOUND);
 
         NetworkMetrics metrics = this.player.getProxy().getNetworkMetrics();
         if (metrics != null) {
             channel.attr(NetworkMetrics.ATTRIBUTE).set(metrics);
         }
 
-        if (metrics instanceof RakMetrics rakMetrics && channel instanceof RakChannel) {
+        if (metrics instanceof RakChannelMetrics rakMetrics && channel instanceof RakChannel) {
             channel.config().setOption(RakChannelOption.RAK_METRICS, rakMetrics);
         }
 
         channel.pipeline()
                 .addLast(FrameIdCodec.NAME, RAKNET_FRAME_CODEC)
-                .addLast(CompressionCodec.NAME, getCompressionCodec(compression, rakVersion, true))
+                .addLast(CompressionCodec.NAME, new ProxiedCompressionCodec(getCompressionStrategy(compression, rakVersion, true), false))
                 .addLast(BedrockBatchDecoder.NAME, BATCH_DECODER)
                 .addLast(BedrockBatchEncoder.NAME, new BedrockBatchEncoder())
                 .addLast(BedrockPacketCodec.NAME, getPacketCodec(rakVersion))
@@ -76,6 +77,10 @@ public class ProxiedClientSessionInitializer extends ChannelInitializer<Channel>
         ClientConnection connection = this.createConnection(channel);
         if (connection instanceof ChannelHandler handler) {
             channel.pipeline().addLast(ClientConnection.NAME, handler);
+        }
+
+        if (connection.getPacketDirection() != PacketDirection.SERVER_BOUND) {
+            throw new IllegalStateException("Client connection must have a server-bound packet direction");
         }
 
         channel.pipeline()

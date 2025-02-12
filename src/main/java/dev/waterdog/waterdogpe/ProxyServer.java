@@ -24,9 +24,10 @@ import dev.waterdog.waterdogpe.event.defaults.ProxyStartEvent;
 import dev.waterdog.waterdogpe.logger.MainLogger;
 import dev.waterdog.waterdogpe.network.EventLoops;
 import dev.waterdog.waterdogpe.network.NetworkMetrics;
-import dev.waterdog.waterdogpe.network.connection.codec.compression.CompressionAlgorithm;
+import dev.waterdog.waterdogpe.network.connection.codec.compression.CompressionType;
 import dev.waterdog.waterdogpe.network.connection.codec.initializer.OfflineServerChannelInitializer;
 import dev.waterdog.waterdogpe.network.connection.codec.initializer.ProxiedServerSessionInitializer;
+import dev.waterdog.waterdogpe.network.connection.codec.initializer.ProxiedSessionInitializer;
 import dev.waterdog.waterdogpe.network.connection.codec.query.QueryHandler;
 import dev.waterdog.waterdogpe.network.connection.handler.DefaultForcedHostHandler;
 import dev.waterdog.waterdogpe.network.connection.handler.IForcedHostHandler;
@@ -146,10 +147,10 @@ public class ProxyServer {
             WaterdogPE.version().debug(true);
         }
 
-        CompressionAlgorithm compression = this.getConfiguration().getCompression();
+        CompressionType compression = this.getConfiguration().getCompression();
         if (compression.getBedrockAlgorithm() == null) {
             this.logger.error("Bedrock compression supports only ZLIB or Snappy! Currently provided " + compression + ", defaulting to ZLIB!");
-            this.getConfiguration().setCompression(CompressionAlgorithm.ZLIB);
+            this.getConfiguration().setCompression(CompressionType.ZLIB);
         }
 
         ThreadFactoryBuilder builder = ThreadFactoryBuilder
@@ -196,6 +197,11 @@ public class ProxyServer {
         this.joinHandler = this.configurationManager.loadServiceProvider(this.getConfiguration().getJoinHandler(), IJoinHandler.class, this.pluginManager);
 
         this.boot();
+    }
+
+    public void reloadPackManager() {
+        this.packManager.clear();
+        this.packManager.loadPacks(this.packsPath);
     }
 
     public static ProxyServer getInstance() {
@@ -246,6 +252,11 @@ public class ProxyServer {
         this.logger.debug("Upstream <-> Proxy compression level " + this.getConfiguration().getUpstreamCompression());
         this.logger.debug("Downstream <-> Proxy compression level " + this.getConfiguration().getDownstreamCompression());
         this.logger.debug("MTU Settings: max_user=" + this.getNetworkSettings().getMaximumMtu() + " max_server=" + this.getNetworkSettings().getMaximumDownstreamMtu());
+        this.logger.debug("RakNet Cookies: enabled=" + this.getNetworkSettings().enableCookies());
+
+        ProxiedSessionInitializer.ZLIB_RAW_STRATEGY.getDefaultCompression().setLevel(this.getConfiguration().getUpstreamCompression());
+        ProxiedSessionInitializer.ZLIB_STRATEGY.getDefaultCompression().setLevel(this.getConfiguration().getUpstreamCompression());
+        // TODO: support downstream compression level too
 
         Runtime.getRuntime().addShutdownHook(new Thread(this::shutdown));
         this.tickFuture = this.tickExecutor.scheduleAtFixedRate(this::tickProcessor, 50, 50, TimeUnit.MILLISECONDS);
@@ -264,6 +275,7 @@ public class ProxyServer {
                     .option(RakChannelOption.RAK_GUID, this.serverId)
                     .option(RakChannelOption.RAK_HANDLE_PING, true)
                     .option(RakChannelOption.RAK_MAX_MTU, this.getNetworkSettings().getMaximumMtu())
+                    .option(RakChannelOption.RAK_SEND_COOKIE, this.getNetworkSettings().enableCookies())
                     .childOption(RakChannelOption.RAK_SESSION_TIMEOUT, 10000L)
                     .childOption(RakChannelOption.RAK_ORDERING_CHANNELS, 1)
                     .handler(new OfflineServerChannelInitializer(this))

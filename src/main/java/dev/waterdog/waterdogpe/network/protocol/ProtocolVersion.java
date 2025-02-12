@@ -53,6 +53,19 @@ import org.cloudburstmc.protocol.bedrock.codec.v575.Bedrock_v575;
 import org.cloudburstmc.protocol.bedrock.codec.v582.Bedrock_v582;
 import org.cloudburstmc.protocol.bedrock.codec.v589.Bedrock_v589;
 import org.cloudburstmc.protocol.bedrock.codec.v594.Bedrock_v594;
+import org.cloudburstmc.protocol.bedrock.codec.v618.Bedrock_v618;
+import org.cloudburstmc.protocol.bedrock.codec.v622.Bedrock_v622;
+import org.cloudburstmc.protocol.bedrock.codec.v630.Bedrock_v630;
+import org.cloudburstmc.protocol.bedrock.codec.v649.Bedrock_v649;
+import org.cloudburstmc.protocol.bedrock.codec.v662.Bedrock_v662;
+import org.cloudburstmc.protocol.bedrock.codec.v671.Bedrock_v671;
+import org.cloudburstmc.protocol.bedrock.codec.v685.Bedrock_v685;
+import org.cloudburstmc.protocol.bedrock.codec.v686.Bedrock_v686;
+import org.cloudburstmc.protocol.bedrock.codec.v712.Bedrock_v712;
+import org.cloudburstmc.protocol.bedrock.codec.v729.Bedrock_v729;
+import org.cloudburstmc.protocol.bedrock.codec.v748.Bedrock_v748;
+import org.cloudburstmc.protocol.bedrock.codec.v766.Bedrock_v766;
+import org.cloudburstmc.protocol.bedrock.codec.v776.Bedrock_v776;
 
 @ToString(exclude = {"defaultCodec", "bedrockCodec"})
 public enum ProtocolVersion {
@@ -91,7 +104,22 @@ public enum ProtocolVersion {
     MINECRAFT_PE_1_19_70(575, Bedrock_v575.CODEC),
     MINECRAFT_PE_1_19_80(582, Bedrock_v582.CODEC),
     MINECRAFT_PE_1_20_0(589, Bedrock_v589.CODEC),
-    MINECRAFT_PE_1_20_10(594, Bedrock_v594.CODEC);
+    MINECRAFT_PE_1_20_10(594, Bedrock_v594.CODEC),
+    MINECRAFT_PE_1_20_30(618, Bedrock_v618.CODEC),
+    MINECRAFT_PE_1_20_40(622, Bedrock_v622.CODEC),
+    MINECRAFT_PE_1_20_50(630, Bedrock_v630.CODEC),
+    MINECRAFT_PE_1_20_60(649, Bedrock_v649.CODEC),
+    MINECRAFT_PE_1_20_70(662, Bedrock_v662.CODEC),
+    MINECRAFT_PE_1_20_80(671, Bedrock_v671.CODEC),
+    MINECRAFT_PE_1_21_0(685, Bedrock_v685.CODEC),
+    MINECRAFT_PE_1_21_2(686, Bedrock_v686.CODEC),
+    MINECRAFT_PE_1_21_20(712, Bedrock_v712.CODEC),
+    MINECRAFT_PE_1_21_30(729, Bedrock_v729.CODEC),
+    MINECRAFT_PE_1_21_40(748, Bedrock_v748.CODEC),
+    MINECRAFT_PE_1_21_50_29(765, 766, Bedrock_v766.CODEC),
+    MINECRAFT_PE_1_21_50(766, Bedrock_v766.CODEC),
+    MINECRAFT_PE_1_21_60(776, Bedrock_v776.CODEC),
+    ;
 
     private static final ProtocolVersion[] VALUES = values();
     private static final Int2ObjectMap<ProtocolVersion> VERSIONS = new Int2ObjectOpenHashMap<>();

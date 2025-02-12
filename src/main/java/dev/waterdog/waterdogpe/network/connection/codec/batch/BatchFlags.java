@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 WaterdogTEAM
+ * Copyright 2024 WaterdogTEAM
  * Licensed under the GNU General Public License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,19 +13,10 @@
  * limitations under the License.
  */
 
-package dev.waterdog.waterdogpe.network;
+package dev.waterdog.waterdogpe.network.connection.codec.batch;
 
-import io.netty.util.AttributeKey;
+import org.cloudburstmc.protocol.bedrock.util.PacketFlag;
 
-public enum PacketDirection {
-    /**
-     * Going from user to proxy
-     */
-    FROM_USER,
-    /**
-     * Going from server to proxy
-     */
-    FROM_SERVER;
-
-    public static final AttributeKey<PacketDirection> ATTRIBUTE = AttributeKey.newInstance("packet_direction");
+public enum BatchFlags implements PacketFlag {
+    SKIP_QUEUE
 }

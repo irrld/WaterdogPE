@@ -16,11 +16,13 @@
 package dev.waterdog.waterdogpe.network.connection.client;
 
 import dev.waterdog.waterdogpe.network.connection.ProxiedConnection;
-import dev.waterdog.waterdogpe.network.connection.codec.compression.CompressionAlgorithm;
 import dev.waterdog.waterdogpe.network.serverinfo.ServerInfo;
 import dev.waterdog.waterdogpe.player.ProxiedPlayer;
+import org.cloudburstmc.protocol.bedrock.PacketDirection;
 import org.cloudburstmc.protocol.bedrock.codec.BedrockCodec;
 import org.cloudburstmc.protocol.bedrock.codec.BedrockCodecHelper;
+import org.cloudburstmc.protocol.bedrock.data.CompressionAlgorithm;
+import org.cloudburstmc.protocol.bedrock.netty.codec.compression.CompressionStrategy;
 
 import javax.crypto.SecretKey;
 
@@ -39,7 +41,14 @@ public interface ClientConnection extends ProxiedConnection {
 
     void setCompression(CompressionAlgorithm compression);
 
+    void setCompressionStrategy(CompressionStrategy strategy);
+
     void addDisconnectListener(Runnable listener);
 
     void disconnect();
+
+    @Override
+    default PacketDirection getPacketDirection() {
+        return PacketDirection.SERVER_BOUND;
+    }
 }

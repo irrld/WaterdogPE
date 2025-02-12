@@ -176,7 +176,7 @@ public class SwitchDownstreamHandler extends AbstractDownstreamHandler {
         }
         scoreboards.clear();
 
-        injectRemoveAllEffects(this.player.getConnection(), rewriteData.getEntityId());
+        injectRemoveAllEffects(this.player.getConnection(), rewriteData.getEntityId(), this.player.getProtocol());
         injectClearWeather(this.player.getConnection());
 
         injectGameMode(this.player.getConnection(), packet.getPlayerGameType());
@@ -199,14 +199,17 @@ public class SwitchDownstreamHandler extends AbstractDownstreamHandler {
             Vector3f fakePosition = packet.getPlayerPosition().add(2000, 0, 2000);
             injectPosition(this.player.getConnection(), fakePosition, packet.getRotation(), rewriteData.getEntityId());
             this.player.getConnection().setTransferQueueActive(true);
-            injectDimensionChange(this.player.getConnection(), newDimension, fakePosition,
-                    rewriteData.getEntityId(), player.getProtocol(), true);
+            injectDimensionChange(this.player.getConnection(), newDimension, fakePosition, rewriteData.getEntityId(), player.getProtocol(), true);
             // Force client to exit first dim screen after one second
-            this.player.getProxy().getScheduler().scheduleDelayed(() -> {
+            /*this.player.getProxy().getScheduler().scheduleDelayed(() -> {
+                if (!player.acceptPlayStatus()) {
+                    return;
+                }
                 PlayStatusPacket statusPacket = new PlayStatusPacket();
                 statusPacket.setStatus(PlayStatusPacket.Status.PLAYER_SPAWN);
                 this.player.getConnection().sendPacketImmediately(statusPacket);
-            }, 20 * 2);
+                transferCallback.onTransferPhase1Completed();
+            }, 20);*/
         } else if (newDimension == packet.getDimensionId()) {
             // Transfer between different dimensions
             injectPosition(this.player.getConnection(), packet.getPlayerPosition(), packet.getRotation(), rewriteData.getEntityId());
