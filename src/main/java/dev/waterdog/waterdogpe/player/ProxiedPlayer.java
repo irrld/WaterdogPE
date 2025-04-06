@@ -256,6 +256,7 @@ public class ProxiedPlayer implements CommandSender {
         if (connectingServer != null) {
             if (connectingServer.getServerInfo() == targetServer) {
                 callback.completeWith(ConnectState.ALREADY_CONNECTING, serverInfo, null);
+                this.pendingServers.remove(targetServer);
                 return;
             } else {
                 connectingServer.disconnect();
