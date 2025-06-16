@@ -53,6 +53,11 @@ public class PackManager {
     }
 
     public void clear() {
+        for (ResourcePack pack : this.packs.values()) {
+            try {
+                pack.close();
+            } catch (IOException ignored) {}
+        }
         this.packs.clear();
         this.packsByIdVer.clear();
     }
@@ -146,6 +151,9 @@ public class PackManager {
         if (resourcePack == null) {
             return false;
         }
+        try {
+            resourcePack.close();
+        } catch (IOException ignored) {}
 
         String packIdVer = resourcePack.getPackId() + "_" + resourcePack.getVersion();
         this.packsByIdVer.remove(packIdVer);
@@ -167,7 +175,7 @@ public class PackManager {
 
         this.stackPacket.setGameVersion("");
 
-        if (!ProxyServer.getInstance().getConfiguration().getExperiments().isEmpty()){
+        if (!ProxyServer.getInstance().getConfiguration().getExperiments().isEmpty()) {
             this.stackPacket.setExperimentsPreviouslyToggled(true);
             for (String experiment : ProxyServer.getInstance().getConfiguration().getExperiments()) {
                 this.stackPacket.getExperiments().add(new ExperimentData(experiment,true));

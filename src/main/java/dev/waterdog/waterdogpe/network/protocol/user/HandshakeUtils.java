@@ -28,6 +28,9 @@ import dev.waterdog.waterdogpe.ProxyServer;
 import dev.waterdog.waterdogpe.network.protocol.ProtocolVersion;
 import dev.waterdog.waterdogpe.utils.config.proxy.ProxyConfig;
 import org.cloudburstmc.protocol.bedrock.BedrockSession;
+import org.cloudburstmc.protocol.bedrock.data.auth.AuthPayload;
+import org.cloudburstmc.protocol.bedrock.data.auth.CertificateChainPayload;
+import org.cloudburstmc.protocol.bedrock.data.auth.TokenPayload;
 import org.cloudburstmc.protocol.bedrock.packet.LoginPacket;
 import org.cloudburstmc.protocol.bedrock.packet.ServerToClientHandshakePacket;
 import org.cloudburstmc.protocol.bedrock.util.EncryptionUtils;
@@ -163,34 +166,43 @@ public class HandshakeUtils {
     }
 
     public static HandshakeEntry processHandshake(BedrockSession session, LoginPacket packet, ProtocolVersion protocol, boolean strict) throws Exception {
-        List<String> chain = packet.getChain();
-        if (chain.size() < 1) {
+        AuthPayload authPayload = packet.getAuthPayload();
+        if (authPayload instanceof CertificateChainPayload chainPayload) {
+            List<String> chain = chainPayload.getChain();
+            if (chain.isEmpty()) {
+                throw new IllegalArgumentException("Invalid chain data");
+            }
+
+            boolean xboxAuth = HandshakeUtils.validateChain(chain, strict);
+            JsonObject payload = (JsonObject) JsonParser.parseString(SignedJWT.parse(chain.get(chain.size() - 1)).getPayload().toString());
+            JsonObject extraData = HandshakeUtils.parseExtraData(packet, payload);
+
+            if (!payload.has("identityPublicKey")) {
+                throw new RuntimeException("Identity Public Key was not found!");
+            }
+            String identityPublicKeyString = payload.get("identityPublicKey").getAsString();
+
+            ECPublicKey identityPublicKey = generateKey(identityPublicKeyString);
+            SignedJWT clientJwt = SignedJWT.parse(packet.getClientJwt());
+            if (!verifyJwt(clientJwt, identityPublicKey) && strict) {
+                xboxAuth = false;
+            }
+            JsonObject clientData = HandshakeUtils.parseClientData(clientJwt, extraData, session);
+
+            if (xboxAuth) {
+                ProxyConfig config = ProxyServer.getInstance().getConfiguration();
+                if (config.useLoginExtras()) {
+                    clientData.addProperty("Waterdog_Auth", true);
+                }
+            }
+            return new HandshakeEntry(identityPublicKey, clientData, extraData, authPayload.getAuthType(), xboxAuth, protocol);
+        } else if (authPayload instanceof TokenPayload tokenPayload) {
+            //SignedJWT jwt = SignedJWT.parse(tokenPayload.getToken());
+            // todo
+            throw new IllegalArgumentException("Invalid chain data");
+        } else {
             throw new IllegalArgumentException("Invalid chain data");
         }
-
-        boolean xboxAuth = HandshakeUtils.validateChain(chain, strict);
-        JsonObject payload = (JsonObject) JsonParser.parseString(SignedJWT.parse(chain.get(chain.size() - 1)).getPayload().toString());
-        JsonObject extraData = HandshakeUtils.parseExtraData(packet, payload);
-
-        if (!payload.has("identityPublicKey")) {
-            throw new RuntimeException("Identity Public Key was not found!");
-        }
-        String identityPublicKeyString = payload.get("identityPublicKey").getAsString();
-
-        ECPublicKey identityPublicKey = generateKey(identityPublicKeyString);
-        SignedJWT extraDataJwt = SignedJWT.parse(packet.getExtra());
-        if (!verifyJwt(extraDataJwt, identityPublicKey) && strict) {
-            xboxAuth = false;
-        }
-        JsonObject clientData = HandshakeUtils.parseClientData(extraDataJwt, extraData, session);
-
-        if (xboxAuth){
-            ProxyConfig config = ProxyServer.getInstance().getConfiguration();
-            if (config.useLoginExtras()) {
-                clientData.addProperty("Waterdog_Auth", true);
-            }
-        }
-        return new HandshakeEntry(identityPublicKey, clientData, extraData, xboxAuth, protocol);
     }
 
     public static JsonObject parseClientData(JWSObject clientJwt, JsonObject extraData, BedrockSession session) throws Exception {

@@ -87,4 +87,6 @@ public abstract class ResourcePack {
     public void setContentKey(String contentKey) {
         this.contentKey = contentKey;
     }
+
+    public abstract void close() throws IOException;
 }
