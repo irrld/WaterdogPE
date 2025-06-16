@@ -37,13 +37,11 @@ public class HandshakeEntry {
     private final JsonObject extraData;
     private final boolean xboxAuthed;
     private ProtocolVersion protocol;
-    private final AuthType authType;
 
-    public HandshakeEntry(ECPublicKey identityPublicKey, JsonObject clientData, JsonObject extraData, AuthType authType, boolean xboxAuthed, ProtocolVersion protocol) {
+    public HandshakeEntry(ECPublicKey identityPublicKey, JsonObject clientData, JsonObject extraData, boolean xboxAuthed, ProtocolVersion protocol) {
         this.identityPublicKey = identityPublicKey;
         this.clientData = clientData;
         this.extraData = extraData;
-        this.authType = authType;
         this.xboxAuthed = xboxAuthed;
         this.protocol = protocol;
     }
@@ -55,7 +53,6 @@ public class HandshakeEntry {
         proxy.getEventManager().callEvent(event);
 
         LoginData.LoginDataBuilder builder = LoginData.builder();
-        builder.authType(authType);
         builder.displayName(this.extraData.get("displayName").getAsString());
         builder.uuid(UUID.fromString(this.extraData.get("identity").getAsString()));
         builder.xuid(this.extraData.get("XUID").getAsString());
