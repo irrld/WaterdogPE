@@ -39,7 +39,6 @@ public class LoginData {
     private final String displayName;
     private final UUID uuid;
     private final String xuid;
-    private final AuthType authType;
     private final boolean xboxAuthed;
     private final SocketAddress address;
     private final ProtocolVersion protocol;
@@ -54,6 +53,7 @@ public class LoginData {
 
     private final KeyPair keyPair;
     private final JsonObject clientData;
+    @Deprecated
     private final JsonObject extraData;
 
     private LoginPacket loginPacket;
@@ -74,7 +74,8 @@ public class LoginData {
         SignedJWT signedExtraData = HandshakeUtils.encodeJWT(this.keyPair, this.clientData);
 
         LoginPacket loginPacket = new LoginPacket();
-        loginPacket.setAuthPayload(new CertificateChainPayload(Collections.singletonList(signedClientData.serialize()), authType));
+        // Even if upstream sent TokenPayload, we use the CertificateChainPayload for compatability
+        loginPacket.setAuthPayload(new CertificateChainPayload(Collections.singletonList(signedClientData.serialize()), AuthType.SELF_SIGNED));
         loginPacket.setClientJwt(signedExtraData.serialize());
         loginPacket.setProtocolVersion(this.protocol.getProtocol());
         return this.loginPacket = loginPacket;
@@ -112,6 +113,7 @@ public class LoginData {
         return this.clientData;
     }
 
+    @Deprecated
     public JsonObject getExtraData() {
         return this.extraData;
     }
