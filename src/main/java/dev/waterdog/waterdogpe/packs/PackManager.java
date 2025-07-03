@@ -36,7 +36,7 @@ import java.util.UUID;
 
 public class PackManager {
 
-    private static final long CHUNK_SIZE = 1024*100;
+    private static final long CHUNK_SIZE = 1024 * 256;
 
     private static final PathMatcher ZIP_PACK_MATCHER = FileSystems.getDefault().getPathMatcher("glob:**.{zip,mcpack}");
     private static final ResourcePackStackPacket.Entry EDU_PACK = new ResourcePackStackPacket.Entry("0fba4063-dba1-4281-9b89-ff9390653530", "1.0.0", "");
@@ -252,5 +252,9 @@ public class PackManager {
 
     public Map<String, ResourcePack> getPacksByIdVer() {
         return this.packsByIdVer;
+    }
+
+    public long getChunkCount(ResourcePack pack) {
+        return (pack.getPackSize() - 1) / CHUNK_SIZE + 1;
     }
 }
