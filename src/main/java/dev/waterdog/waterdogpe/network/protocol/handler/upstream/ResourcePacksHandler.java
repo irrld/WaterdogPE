@@ -81,10 +81,10 @@ public class ResourcePacksHandler extends AbstractUpstreamHandler {
 
     @Override
     public PacketSignal handle(ResourcePackChunkRequestPacket packet) {
-        if (!sendingChunks) {
+        /*if (!sendingChunks) {
             this.player.disconnect("Invalid requested chunk!");
             return cancel();
-        }
+        }*/
         chunkRequestQueue.add(packet);
         PackManager packManager = this.player.getProxy().getPackManager();
         ResourcePack pack = packManager.getPacksByIdVer().get(packet.getPackId() + "_" + packet.getPackVersion());
@@ -93,10 +93,10 @@ public class ResourcePacksHandler extends AbstractUpstreamHandler {
             return this.cancel();
         }
         long chunkCount = packManager.getChunkCount(pack);
-        if (packet.getChunkIndex() >= chunkCount || sentChunks > chunkCount) {
+        /*if (packet.getChunkIndex() >= chunkCount || sentChunks > chunkCount) {
             this.player.disconnect("Invalid requested chunk!");
             return this.cancel();
-        }
+        }*/
         ProxyServer.getInstance().getScheduler().scheduleDelayed(this::processNextChunk, PACKET_SEND_DELAY, true);
         return this.cancel();
     }
