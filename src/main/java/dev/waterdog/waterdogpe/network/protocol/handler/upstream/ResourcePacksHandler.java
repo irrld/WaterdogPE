@@ -15,8 +15,6 @@
 
 package dev.waterdog.waterdogpe.network.protocol.handler.upstream;
 
-import dev.waterdog.waterdogpe.ProxyServer;
-import dev.waterdog.waterdogpe.packs.types.ResourcePack;
 import org.cloudburstmc.protocol.bedrock.packet.*;
 import dev.waterdog.waterdogpe.event.defaults.PlayerResourcePackApplyEvent;
 import dev.waterdog.waterdogpe.packs.PackManager;
@@ -25,21 +23,14 @@ import org.cloudburstmc.protocol.common.PacketSignal;
 
 import java.util.LinkedList;
 import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
  * Upstream handler handling proxy manager resource packs.
  */
 public class ResourcePacksHandler extends AbstractUpstreamHandler {
 
-    private static final int PACKET_SEND_DELAY = 4;
-
     private final Queue<ResourcePackDataInfoPacket> pendingPacks = new LinkedList<>();
-
-    private final Queue<ResourcePackChunkRequestPacket> chunkRequestQueue = new ConcurrentLinkedQueue<>();
     private ResourcePackDataInfoPacket sendingPack;
-    private boolean sendingChunks = false;
-    private long sentChunks = 0;
 
     public ResourcePacksHandler(ProxiedPlayer player) {
         super(player);
@@ -81,47 +72,6 @@ public class ResourcePacksHandler extends AbstractUpstreamHandler {
 
     @Override
     public PacketSignal handle(ResourcePackChunkRequestPacket packet) {
-        /*if (!sendingChunks) {
-            this.player.disconnect("Invalid requested chunk!");
-            return cancel();
-        }*/
-        chunkRequestQueue.add(packet);
-        PackManager packManager = this.player.getProxy().getPackManager();
-        ResourcePack pack = packManager.getPacksByIdVer().get(packet.getPackId() + "_" + packet.getPackVersion());
-        if (pack == null) {
-            this.player.disconnect("Unknown resource pack!");
-            return this.cancel();
-        }
-        long chunkCount = packManager.getChunkCount(pack);
-        /*if (packet.getChunkIndex() >= chunkCount || sentChunks > chunkCount) {
-            this.player.disconnect("Invalid requested chunk!");
-            return this.cancel();
-        }*/
-        ProxyServer.getInstance().getScheduler().scheduleDelayed(this::processNextChunk, PACKET_SEND_DELAY, true);
-        return this.cancel();
-    }
-
-    private void sendNextPacket() {
-        ResourcePackDataInfoPacket infoPacket = this.pendingPacks.poll();
-        if (infoPacket != null && this.player.isConnected()) {
-            this.sendingPack = infoPacket;
-            this.player.sendPacket(infoPacket);
-            sentChunks = 0;
-            sendingChunks = true;
-        } else {
-            sendingChunks = false;
-        }
-    }
-
-    private void processNextChunk() {
-        if (!player.isConnected() || !sendingChunks) {
-            return;
-        }
-        ResourcePackChunkRequestPacket packet = chunkRequestQueue.poll();
-        if (packet == null) {
-            return;
-        }
-
         PackManager packManager = this.player.getProxy().getPackManager();
         ResourcePackChunkDataPacket response = packManager.packChunkDataPacket(packet.getPackId() + "_" + packet.getPackVersion(), packet);
         if (response == null) {
@@ -131,6 +81,15 @@ public class ResourcePacksHandler extends AbstractUpstreamHandler {
             if (this.sendingPack != null && (packet.getChunkIndex() + 1) >= this.sendingPack.getChunkCount()) {
                 this.sendNextPacket();
             }
+        }
+        return this.cancel();
+    }
+
+    private void sendNextPacket() {
+        ResourcePackDataInfoPacket infoPacket = this.pendingPacks.poll();
+        if (infoPacket != null && this.player.isConnected()) {
+            this.sendingPack = infoPacket;
+            this.player.sendPacket(infoPacket);
         }
     }
 }
