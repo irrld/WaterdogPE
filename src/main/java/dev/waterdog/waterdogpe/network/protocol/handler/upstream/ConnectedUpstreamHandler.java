@@ -19,7 +19,9 @@ import dev.waterdog.waterdogpe.network.connection.ProxiedConnection;
 import dev.waterdog.waterdogpe.network.connection.client.ClientConnection;
 import dev.waterdog.waterdogpe.network.protocol.handler.ProxyPacketHandler;
 import dev.waterdog.waterdogpe.network.protocol.rewrite.RewriteMaps;
+import dev.waterdog.waterdogpe.utils.TextUtils;
 import lombok.Setter;
+import net.kyori.adventure.text.Component;
 import org.cloudburstmc.protocol.bedrock.data.PlayerActionType;
 import org.cloudburstmc.protocol.bedrock.netty.BedrockBatchWrapper;
 import org.cloudburstmc.protocol.bedrock.packet.*;
@@ -30,6 +32,8 @@ import dev.waterdog.waterdogpe.network.protocol.handler.TransferCallback;
 import dev.waterdog.waterdogpe.player.ProxiedPlayer;
 import dev.waterdog.waterdogpe.network.protocol.Signals;
 import org.cloudburstmc.protocol.common.PacketSignal;
+
+import java.awt.*;
 
 /**
  * Main handler for handling packets received from upstream.
@@ -71,9 +75,10 @@ public class ConnectedUpstreamHandler extends AbstractUpstreamHandler implements
 
     @Override
     public final PacketSignal handle(TextPacket packet) {
-        PlayerChatEvent event = new PlayerChatEvent(this.player, packet.getMessage());
+        String message = TextUtils.componentToString(packet.getMessage());
+        PlayerChatEvent event = new PlayerChatEvent(this.player, message);
         ProxyServer.getInstance().getEventManager().callEvent(event);
-        packet.setMessage(event.getMessage());
+        packet.setMessage(Component.text(event.getMessage()));
         if (event.isCancelled()) {
             return Signals.CANCEL;
         }

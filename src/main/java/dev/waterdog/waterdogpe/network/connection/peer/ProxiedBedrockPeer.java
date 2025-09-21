@@ -25,6 +25,7 @@ import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.ReferenceCountUtil;
 import lombok.extern.log4j.Log4j2;
+import net.kyori.adventure.text.Component;
 import org.cloudburstmc.netty.channel.raknet.RakChannel;
 import org.cloudburstmc.netty.channel.raknet.config.RakChannelOption;
 import org.cloudburstmc.netty.handler.codec.raknet.common.RakSessionCodec;
@@ -206,7 +207,7 @@ public class ProxiedBedrockPeer extends BedrockPeer {
     }
 
     public void disconnect(String reason) {
-        this.sessions.values().forEach(session -> session.disconnect(reason));
+        this.sessions.values().forEach(session -> session.disconnect(Component.text(reason)));
         this.channel.eventLoop().schedule(() -> this.channel.close(), 200, TimeUnit.MILLISECONDS);
     }
 

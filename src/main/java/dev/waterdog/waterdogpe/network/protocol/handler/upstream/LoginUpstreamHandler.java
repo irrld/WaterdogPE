@@ -146,6 +146,9 @@ public class LoginUpstreamHandler implements BedrockPacketHandler {
 
         this.session.setLogging(WaterdogPE.version().debug());
         try {
+            this.proxy.getLogger().debug("[{}] <-> Received login with authType: {} and payloadType: {}.", this.session.getSocketAddress(),
+                    packet.getAuthPayload().getClass().getSimpleName(), packet.getAuthPayload().getAuthType());
+
             handshakeEntry = HandshakeUtils.processHandshake(this.session, packet, protocol, strictAuth);
             if (!handshakeEntry.isXboxAuthed() && strictAuth) {
                 this.onLoginFailed(handshakeEntry, null, "disconnectionScreen.notAuthenticated");

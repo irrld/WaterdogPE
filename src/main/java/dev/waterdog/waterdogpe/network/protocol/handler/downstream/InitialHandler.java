@@ -19,11 +19,8 @@ import com.nimbusds.jwt.SignedJWT;
 import dev.waterdog.waterdogpe.network.connection.client.ClientConnection;
 import dev.waterdog.waterdogpe.network.connection.handler.ReconnectReason;
 import dev.waterdog.waterdogpe.network.protocol.registry.FakeDefinitionRegistry;
-import dev.waterdog.waterdogpe.network.protocol.user.HandshakeUtils;
-import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
-import it.unimi.dsi.fastutil.ints.IntSet;
+import net.kyori.adventure.text.Component;
 import org.cloudburstmc.protocol.bedrock.codec.BedrockCodecHelper;
-import org.cloudburstmc.protocol.bedrock.data.definitions.ItemDefinition;
 import org.cloudburstmc.protocol.bedrock.packet.*;
 import dev.waterdog.waterdogpe.event.defaults.InitialServerConnectedEvent;
 import dev.waterdog.waterdogpe.network.serverinfo.ServerInfo;
@@ -37,7 +34,6 @@ import dev.waterdog.waterdogpe.network.protocol.Signals;
 import dev.waterdog.waterdogpe.utils.types.TranslationContainer;
 import org.cloudburstmc.protocol.bedrock.util.EncryptionUtils;
 import org.cloudburstmc.protocol.common.PacketSignal;
-import org.cloudburstmc.protocol.common.SimpleDefinitionRegistry;
 
 import javax.crypto.SecretKey;
 import java.net.URI;
@@ -66,7 +62,7 @@ public class InitialHandler extends AbstractDownstreamHandler {
         try {
             SignedJWT saltJwt = SignedJWT.parse(packet.getJwt());
             URI x5u = saltJwt.getHeader().getX509CertURL();
-            ECPublicKey serverKey = HandshakeUtils.generateKey(x5u.toASCIIString());
+            ECPublicKey serverKey = EncryptionUtils.parseKey(x5u.toASCIIString());
             SecretKey key = EncryptionUtils.getSecretKey(
                     this.player.getLoginData().getKeyPair().getPrivate(),
                     serverKey,
@@ -114,7 +110,7 @@ public class InitialHandler extends AbstractDownstreamHandler {
         rewriteData.setSpawnPosition(packet.getPlayerPosition());
         packet.setRuntimeEntityId(rewriteData.getEntityId());
         packet.setUniqueEntityId(rewriteData.getEntityId());
-        packet.setLevelName(rewriteData.getProxyName());
+        packet.setLevelName(Component.text(rewriteData.getProxyName()));
 
         // Starting with 419 server does not send vanilla blocks to client
         if (this.player.getProtocol().isBeforeOrEqual(ProtocolVersion.MINECRAFT_PE_1_16_20)) {
