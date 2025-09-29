@@ -21,10 +21,8 @@ import dev.waterdog.waterdogpe.network.connection.codec.server.PacketQueueHandle
 import dev.waterdog.waterdogpe.network.protocol.Signals;
 import dev.waterdog.waterdogpe.network.protocol.handler.ProxyBatchBridge;
 import dev.waterdog.waterdogpe.network.protocol.handler.ProxyPacketHandler;
-import dev.waterdog.waterdogpe.utils.TextUtils;
 import io.netty.channel.ChannelPipeline;
 import lombok.extern.log4j.Log4j2;
-import net.kyori.adventure.text.Component;
 import org.cloudburstmc.protocol.bedrock.BedrockDisconnectReasons;
 import org.cloudburstmc.protocol.bedrock.BedrockPeer;
 import org.cloudburstmc.protocol.bedrock.BedrockSession;
@@ -79,18 +77,8 @@ public class BedrockServerSession extends BedrockSession implements ProxiedConne
         this.getPeer().sendPacket(batch);
     }
 
-    // This is set to final to prevent accidental overrides
-    // void disconnect(Component, boolean) should be overloaded instead
-    public final void disconnect(String reason, boolean hideReason) {
-        disconnect(Component.text(reason), hideReason);
-    }
-
-    public final void disconnect(String reason) {
-        disconnect(reason, false);
-    }
-
     @Override
-    public void disconnect(Component reason, boolean hideReason) {
+    public void disconnect(CharSequence reason, boolean hideReason) {
         this.checkForClosed();
 
         DisconnectPacket packet = new DisconnectPacket();
@@ -142,9 +130,9 @@ public class BedrockServerSession extends BedrockSession implements ProxiedConne
         return this.packetHandler;
     }
 
-    public void addDisconnectListener(Consumer<String> listener) {
+    public void addDisconnectListener(Consumer<CharSequence> listener) {
         this.getPeer().getChannel().closeFuture().addListener(future -> {
-            listener.accept(TextUtils.componentToString(this.getDisconnectReason()));
+            listener.accept(this.getDisconnectReason());
         });
     }
 

@@ -18,8 +18,6 @@ package dev.waterdog.waterdogpe.network.protocol.handler.downstream;
 import com.nimbusds.jwt.SignedJWT;
 import dev.waterdog.waterdogpe.network.connection.client.ClientConnection;
 import dev.waterdog.waterdogpe.network.protocol.handler.TransferCallback;
-import dev.waterdog.waterdogpe.network.protocol.user.HandshakeUtils;
-import dev.waterdog.waterdogpe.utils.TextUtils;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import lombok.extern.log4j.Log4j2;
 import org.cloudburstmc.math.vector.Vector3f;
@@ -237,7 +235,7 @@ public class SwitchDownstreamHandler extends AbstractDownstreamHandler {
 
         this.connection.disconnect();
         this.player.sendMessage(new TranslationContainer("waterdog.downstream.transfer.failed", this.connection.getServerInfo().getServerName(),
-                TextUtils.componentToString(packet.getKickMessage())));
+                packet.getKickMessage()));
         return Signals.CANCEL;
     }
 }

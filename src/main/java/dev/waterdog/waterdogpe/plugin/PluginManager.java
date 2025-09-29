@@ -28,6 +28,7 @@ import org.yaml.snakeyaml.representer.Representer;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.FileVisitOption;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
@@ -73,7 +74,7 @@ public class PluginManager {
         };
 
         Map<PluginYAML, Path> plugins = new TreeMap<>(comparator);
-        try (Stream<Path> stream = Files.walk(folderPath)){
+        try (Stream<Path> stream = Files.walk(folderPath)) {
             stream.filter(Files::isRegularFile).filter(PluginLoader::isJarFile).forEach(jarPath -> {
                 PluginYAML config = this.loadPluginConfig(jarPath);
                 if (config != null) {

@@ -27,7 +27,6 @@ import dev.waterdog.waterdogpe.network.protocol.handler.downstream.InitialHandle
 import dev.waterdog.waterdogpe.network.protocol.handler.downstream.SwitchDownstreamHandler;
 import net.craftersmc.ConnectCallback;
 import net.craftersmc.ConnectState;
-import net.kyori.adventure.text.Component;
 import org.cloudburstmc.protocol.bedrock.data.ScoreInfo;
 import org.cloudburstmc.protocol.bedrock.data.command.CommandOriginData;
 import org.cloudburstmc.protocol.bedrock.data.command.CommandOriginType;
@@ -66,7 +65,7 @@ public class ProxiedPlayer implements CommandSender {
     private final AtomicBoolean disconnected = new AtomicBoolean(false);
     private final AtomicBoolean loginCalled = new AtomicBoolean(false);
     private final AtomicBoolean loginCompleted = new AtomicBoolean(false);
-    private volatile String disconnectReason;
+    private volatile CharSequence disconnectReason;
 
     private final RewriteData rewriteData = new RewriteData();
     private final LoginData loginData;
@@ -365,7 +364,7 @@ public class ProxiedPlayer implements CommandSender {
      *
      * @param reason The disconnect reason the player will see on his disconnect screen (Supports Color Codes)
      */
-    public void disconnect(String reason) {
+    public void disconnect(CharSequence reason) {
         if (this.loginCalled.get() && !this.loginCompleted.get()) {
             // Wait until PlayerLoginEvent completes
             this.disconnectReason = reason;
@@ -392,7 +391,7 @@ public class ProxiedPlayer implements CommandSender {
         }
 
         if (this.connection != null && this.connection.isConnected()) {
-            this.connection.disconnect(Component.text(reason));
+            this.connection.disconnect(reason);
         }
 
         this.proxy.getPlayerManager().removePlayer(this);
@@ -501,7 +500,7 @@ public class ProxiedPlayer implements CommandSender {
         TextPacket packet = new TextPacket();
         packet.setType(TextPacket.Type.RAW);
         packet.setXuid(this.getXuid());
-        packet.setMessage(Component.text(message));
+        packet.setMessage(message);
         this.sendPacket(packet);
     }
 
@@ -533,7 +532,7 @@ public class ProxiedPlayer implements CommandSender {
         packet.setType(TextPacket.Type.CHAT);
         packet.setSourceName(this.getName());
         packet.setXuid(this.getXuid());
-        packet.setMessage(Component.text(message));
+        packet.setMessage(message);
         connection.sendPacket(packet);
     }
 
@@ -546,7 +545,7 @@ public class ProxiedPlayer implements CommandSender {
     public void sendPopup(String message, String subtitle) {
         TextPacket packet = new TextPacket();
         packet.setType(TextPacket.Type.POPUP);
-        packet.setMessage(Component.text(message));
+        packet.setMessage(message);
         packet.setXuid(this.getXuid());
         this.sendPacket(packet);
     }
@@ -559,7 +558,7 @@ public class ProxiedPlayer implements CommandSender {
     public void sendTip(String message) {
         TextPacket packet = new TextPacket();
         packet.setType(TextPacket.Type.TIP);
-        packet.setMessage(Component.text(message));
+        packet.setMessage(message);
         packet.setXuid(this.getXuid());
         this.sendPacket(packet);
     }
@@ -572,7 +571,7 @@ public class ProxiedPlayer implements CommandSender {
     public void setSubtitle(String subtitle) {
         SetTitlePacket packet = new SetTitlePacket();
         packet.setType(SetTitlePacket.Type.SUBTITLE);
-        packet.setText(Component.text(subtitle));
+        packet.setText(subtitle);
         packet.setXuid(this.getXuid());
         packet.setPlatformOnlineId("");
         this.sendPacket(packet);
@@ -592,7 +591,7 @@ public class ProxiedPlayer implements CommandSender {
         packet.setStayTime(duration);
         packet.setFadeOutTime(fadeout);
         packet.setXuid(this.getXuid());
-        packet.setText(Component.text(""));
+        packet.setText("");
         packet.setPlatformOnlineId("");
         this.sendPacket(packet);
     }
@@ -605,7 +604,7 @@ public class ProxiedPlayer implements CommandSender {
     private void setTitle(String text) {
         SetTitlePacket packet = new SetTitlePacket();
         packet.setType(SetTitlePacket.Type.TITLE);
-        packet.setText(Component.text(text));
+        packet.setText(text);
         packet.setXuid(this.getXuid());
         packet.setPlatformOnlineId("");
         this.sendPacket(packet);
@@ -617,7 +616,7 @@ public class ProxiedPlayer implements CommandSender {
     public void clearTitle() {
         SetTitlePacket packet = new SetTitlePacket();
         packet.setType(SetTitlePacket.Type.CLEAR);
-        packet.setText(Component.text(""));
+        packet.setText("");
         packet.setXuid(this.getXuid());
         packet.setPlatformOnlineId("");
         this.sendPacket(packet);
@@ -629,7 +628,7 @@ public class ProxiedPlayer implements CommandSender {
     public void resetTitleSettings() {
         SetTitlePacket packet = new SetTitlePacket();
         packet.setType(SetTitlePacket.Type.RESET);
-        packet.setText(Component.text(""));
+        packet.setText("");
         packet.setXuid(this.getXuid());
         packet.setPlatformOnlineId("");
         this.sendPacket(packet);
@@ -672,8 +671,8 @@ public class ProxiedPlayer implements CommandSender {
         }
 
         ToastRequestPacket packet = new ToastRequestPacket();
-        packet.setTitle(Component.text(title));
-        packet.setContent(Component.text(content));
+        packet.setTitle(title);
+        packet.setContent(content);
         this.sendPacket(packet);
     }
 
@@ -950,7 +949,7 @@ public class ProxiedPlayer implements CommandSender {
         return this.pluginPacketHandlers;
     }
 
-    public String getDisconnectReason() {
+    public CharSequence getDisconnectReason() {
         return this.disconnectReason;
     }
 

@@ -18,7 +18,6 @@ package dev.waterdog.waterdogpe.network.protocol.handler.downstream;
 import dev.waterdog.waterdogpe.network.connection.client.ClientConnection;
 import dev.waterdog.waterdogpe.network.connection.handler.ReconnectReason;
 import dev.waterdog.waterdogpe.network.protocol.handler.PluginPacketHandler;
-import dev.waterdog.waterdogpe.utils.TextUtils;
 import org.cloudburstmc.protocol.bedrock.PacketDirection;
 import org.cloudburstmc.protocol.bedrock.packet.*;
 import dev.waterdog.waterdogpe.event.defaults.FastTransferRequestEvent;
@@ -94,11 +93,10 @@ public class ConnectedDownstreamHandler extends AbstractDownstreamHandler {
 
     @Override
     public final PacketSignal handle(DisconnectPacket packet) {
-        String message = TextUtils.componentToString(packet.getKickMessage());
-        if (this.player.sendToFallback(this.connection.getServerInfo(), ReconnectReason.SERVER_KICK, message)) {
+        if (this.player.sendToFallback(this.connection.getServerInfo(), ReconnectReason.SERVER_KICK, packet.getKickMessage())) {
             return Signals.CANCEL;
         }
-        this.player.disconnect(new TranslationContainer(message));
+        this.player.disconnect(new TranslationContainer(packet.getKickMessage()));
 //        this.player.disconnect(new TranslationContainer("waterdog.downstream.kicked", packet.getKickMessage()));
         return Signals.CANCEL;
     }

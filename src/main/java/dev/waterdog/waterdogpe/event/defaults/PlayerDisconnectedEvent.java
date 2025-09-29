@@ -24,14 +24,14 @@ import dev.waterdog.waterdogpe.player.ProxiedPlayer;
 @AsyncEvent
 public class PlayerDisconnectedEvent extends PlayerEvent {
 
-    private final String reason;
+    private final CharSequence reason;
 
-    public PlayerDisconnectedEvent(ProxiedPlayer player, String reason) {
+    public PlayerDisconnectedEvent(ProxiedPlayer player, CharSequence reason) {
         super(player);
         this.reason = reason;
     }
 
-    public String getReason() {
+    public CharSequence getReason() {
         return this.reason;
     }
 }
