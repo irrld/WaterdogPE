@@ -949,8 +949,12 @@ public class ProxiedPlayer implements CommandSender {
         return this.pluginPacketHandlers;
     }
 
-    public CharSequence getDisconnectReason() {
-        return this.disconnectReason;
+    public String getDisconnectReason() {
+        return this.getDisconnectReason(String.class);
+    }
+
+    public <T extends CharSequence> T getDisconnectReason(Class<T> type) {
+        return type.cast(this.disconnectReason);
     }
 
     @Override
