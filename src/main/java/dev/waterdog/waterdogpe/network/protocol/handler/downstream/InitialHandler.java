@@ -103,7 +103,7 @@ public class InitialHandler extends AbstractDownstreamHandler {
     public final PacketSignal handle(StartGamePacket packet) {
         RewriteData rewriteData = this.player.getRewriteData();
         rewriteData.setOriginalEntityId(packet.getRuntimeEntityId());
-        rewriteData.setEntityId(ThreadLocalRandom.current().nextInt(10000, 15000));
+        rewriteData.setEntityId(-ThreadLocalRandom.current().nextInt(10000, 15000));
         rewriteData.setGameRules(packet.getGamerules());
         rewriteData.setDimension(packet.getDimensionId());
         rewriteData.setSpawnPosition(packet.getPlayerPosition());
