@@ -359,7 +359,7 @@ public class EntityMap implements BedrockPacketHandler {
         PacketSignal signal = PacketSignal.UNHANDLED;
         CameraAttachToEntityInstruction attachInstruction = packet.getAttachInstruction();
         if (attachInstruction != null) {
-            PacketSignal returnedSignal = rewriteId(attachInstruction.getUniqueEntityId(), attachInstruction::setUniqueEntityId);
+            PacketSignal returnedSignal = data.rewriteId(attachInstruction.getUniqueEntityId(), attachInstruction::setUniqueEntityId);
             signal = mergeSignals(signal, returnedSignal);
         }
         return signal;
