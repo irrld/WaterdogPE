@@ -81,14 +81,9 @@ public class LoginData {
         SignedJWT signedClientData = HandshakeUtils.encodeJWT(this.keyPair, this.clientData);
         loginPacket.setClientJwt(signedClientData.serialize());
         loginPacket.setProtocolVersion(this.protocol.getProtocol());
-        if (isChainPayload) {
-            JsonObject extraData = HandshakeUtils.createChainExtraData(displayName, xuid, uuid);
-            SignedJWT signedPayload = HandshakeUtils.createClientDataChain(this.keyPair, extraData);
-            loginPacket.setAuthPayload(new CertificateChainPayload(Collections.singletonList(signedPayload.serialize()), AuthType.SELF_SIGNED));
-        } else {
-            SignedJWT signedPayload = HandshakeUtils.createClientDataToken(this.keyPair, displayName, xuid);
-            loginPacket.setAuthPayload(new TokenPayload(signedPayload.serialize(), AuthType.SELF_SIGNED));
-        }
+        JsonObject extraData = HandshakeUtils.createChainExtraData(displayName, xuid, uuid);
+        SignedJWT signedPayload = HandshakeUtils.createClientDataChain(this.keyPair, extraData);
+        loginPacket.setAuthPayload(new CertificateChainPayload(Collections.singletonList(signedPayload.serialize()), AuthType.SELF_SIGNED));
         this.loginPacket = loginPacket;
         return loginPacket;
     }
