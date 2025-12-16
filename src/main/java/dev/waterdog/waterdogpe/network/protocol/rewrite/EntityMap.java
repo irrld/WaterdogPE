@@ -365,6 +365,22 @@ public class EntityMap implements BedrockPacketHandler {
         return signal;
     }
 
+    @Override
+    public PacketSignal handle(UpdateEquipPacket packet) {
+        return rewriteId(packet.getUniqueEntityId(), packet::setUniqueEntityId);
+    }
+
+    @Override
+    public PacketSignal handle(CameraInstructionPacket packet) {
+        PacketSignal signal = PacketSignal.UNHANDLED;
+        CameraAttachToEntityInstruction attachInstruction = packet.getAttachInstruction();
+        if (attachInstruction != null) {
+            PacketSignal returnedSignal = rewriteId(attachInstruction.getUniqueEntityId(), attachInstruction::setUniqueEntityId);
+            signal = mergeSignals(signal, returnedSignal);
+        }
+        return signal;
+    }
+
     private PacketSignal rewriteMetadata(EntityDataMap metadata) {
         PacketSignal signal = PacketSignal.UNHANDLED;
         for (EntityDataType<Long> data : ENTITY_DATA_FIELDS) {

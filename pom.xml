@@ -16,8 +16,8 @@
         <maven.compiler.release>17</maven.compiler.release>
         <raklib.version>1.0.0.CR3-SNAPSHOT</raklib.version>
         <protocol.version>3.0.0.Beta11-SNAPSHOT</protocol.version>
-        <log4j2.version>2.17.1</log4j2.version>
-        <jline.version>3.23.0</jline.version>
+        <log4j2.version>2.25.2</log4j2.version>
+        <jline.version>3.30.6</jline.version>
         <netty.version>4.1.101.Final</netty.version>
     </properties>
 
@@ -112,9 +112,9 @@
             <version>3.4.4</version>
         </dependency>
         <dependency>
-            <groupId>jline</groupId>
+            <groupId>org.jline</groupId>
             <artifactId>jline</artifactId>
-            <version>2.14.6</version>
+            <version>${jline.version}</version>
             <scope>compile</scope>
         </dependency>
         <dependency>
@@ -157,29 +157,6 @@
                     <artifactId>jline-terminal</artifactId>
                 </exclusion>
             </exclusions>
-            <scope>compile</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.cloudburstmc.protocol</groupId>
-            <artifactId>common</artifactId>
-            <version>${protocol.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>io.netty</groupId>
-                    <artifactId>netty-buffer</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>org.bitbucket.b_c</groupId>
-            <artifactId>jose4j</artifactId>
-            <version>0.9.6</version>
-            <scope>compile</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.cloudburstmc</groupId>
-            <artifactId>nbt</artifactId>
-            <version>3.0.3.Final</version>
             <scope>compile</scope>
         </dependency>
         <dependency>
@@ -269,6 +246,14 @@
                     </execution>
                 </executions>
                 <configuration>
+                    <filters>
+                        <filter>
+                            <artifact>org.jline:jline</artifact>
+                            <excludes>
+                                <exclude>org/jline/terminal/impl/ffm/**</exclude>
+                            </excludes>
+                        </filter>
+                    </filters>
                     <relocations>
                         <relocation>
                             <pattern>org.bstats</pattern>

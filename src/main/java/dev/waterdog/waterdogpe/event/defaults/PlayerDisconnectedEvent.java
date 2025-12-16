@@ -31,6 +31,7 @@ public class PlayerDisconnectedEvent extends PlayerEvent {
         this.reason = reason;
     }
 
+
     public String getReason() {
         return this.getReason(String.class);
     }
@@ -38,4 +39,5 @@ public class PlayerDisconnectedEvent extends PlayerEvent {
     public <T extends CharSequence> T getReason(Class<T> type) {
         return type.cast(this.reason);
     }
+
 }
