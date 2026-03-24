@@ -22,6 +22,7 @@ import it.unimi.dsi.fastutil.objects.Object2ObjectArrayMap;
 import it.unimi.dsi.fastutil.objects.Object2ObjectMap;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectObjectImmutablePair;
+import lombok.Getter;
 import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.constructor.CustomClassLoaderConstructor;
 import org.yaml.snakeyaml.representer.Representer;
@@ -43,6 +44,7 @@ public class PluginManager {
         yamlLoader = new Yaml(new CustomClassLoaderConstructor(PluginManager.class.getClassLoader()), representer);
     }
 
+    @Getter
     private final ProxyServer proxy;
     private final PluginLoader pluginLoader;
 
@@ -258,7 +260,4 @@ public class PluginManager {
         return this.pluginMap.getOrDefault(pluginName, null);
     }
 
-    public ProxyServer getProxy() {
-        return this.proxy;
-    }
 }
