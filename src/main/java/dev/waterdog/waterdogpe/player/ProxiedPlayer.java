@@ -92,7 +92,7 @@ public class ProxiedPlayer implements CommandSender {
     private final LongSet chunkBlobs = LongSets.synchronize(new LongOpenHashSet());
     private final Object2ObjectMap<String, Permission> permissions = new Object2ObjectOpenHashMap<>();
     private final Collection<ServerInfo> pendingServers = ObjectCollections.synchronize(new ObjectArrayList<>());
-    private ClientConnection clientConnection;
+    private volatile ClientConnection clientConnection;
     private ClientConnection pendingConnection;
 
 

@@ -128,6 +128,10 @@ public class SwitchDownstreamHandler extends AbstractDownstreamHandler {
 
         ClientConnection oldConnection = this.player.getDownstreamConnection();
         oldConnection.getServerInfo().removeConnection(oldConnection);
+        // When disconnect is called from outside the event loop, the actual disconnection will run asynchronously.
+        // Window is usually very short but in some rare cases it might take longer than usual.
+        // By setting the handler to null, we prevent any potential .
+        oldConnection.setPacketHandler(null);
         oldConnection.disconnect();
         this.player.setDownstreamConnection(this.connection);
         this.connection.getServerInfo().addConnection(this.connection);
