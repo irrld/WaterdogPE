@@ -85,7 +85,6 @@ public class RewriteData {
     @Getter
     private String proxyName;
 
-
     @Getter
     private BedrockCodecHelper codecHelper;
 
@@ -97,7 +96,7 @@ public class RewriteData {
         return this.immobileFlag;
     }
 
-    public PacketSignal rewriteId(long from, LongConsumer setter) {
+    public PacketSignal rewriteEntityId(long from, LongConsumer setter) {
         long rewriteId = PlayerRewriteUtils.rewriteId(from, getEntityId(), getOriginalEntityId());
         if (rewriteId == from) {
             return PacketSignal.UNHANDLED;
