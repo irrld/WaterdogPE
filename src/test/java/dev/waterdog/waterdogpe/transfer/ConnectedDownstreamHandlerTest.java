@@ -78,6 +78,7 @@ public class ConnectedDownstreamHandlerTest {
         this.handler.handle(kick("bye"));
 
         assertFalse(this.harness.player.isConnected());
-        assertTrue(this.harness.sentMessages.contains("waterdog.downstream.kicked"), "kick reason must reach the player");
+        // The raw kick message becomes the disconnect screen, without a translation wrapper.
+        verify(this.harness.upstream).disconnect((CharSequence) "bye");
     }
 }
