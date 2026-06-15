@@ -25,6 +25,8 @@ import dev.waterdog.waterdogpe.network.protocol.user.LoginData;
 import dev.waterdog.waterdogpe.network.protocol.user.Platform;
 import dev.waterdog.waterdogpe.network.protocol.handler.downstream.InitialHandler;
 import dev.waterdog.waterdogpe.network.protocol.handler.downstream.SwitchDownstreamHandler;
+import net.craftersmc.ConnectCallback;
+import net.craftersmc.ConnectState;
 import lombok.Getter;
 import lombok.Setter;
 import org.cloudburstmc.protocol.bedrock.data.HudElement;
@@ -114,7 +116,7 @@ public class ProxiedPlayer implements CommandSender {
     private final Int2ObjectMap<ContainerType> openContainers = Int2ObjectMaps.synchronize(new Int2ObjectOpenHashMap<>()); // id -> type
     private final Object2ObjectMap<String, Permission> permissions = new Object2ObjectOpenHashMap<>();
     private final Collection<ServerInfo> pendingServers = ObjectCollections.synchronize(new ObjectArrayList<>());
-    private ClientConnection clientConnection;
+    private volatile ClientConnection clientConnection;
     private ClientConnection pendingConnection;
 
 
@@ -254,12 +256,34 @@ public class ProxiedPlayer implements CommandSender {
         this.connect(initialServer);
     }
 
+    public void connect(ServerInfo serverInfo) {
+        connect(serverInfo, new ConnectCallback() {
+            @Override
+            public void whenComplete(ConnectState callback, ServerInfo targetServer, Throwable error) {
+                switch (callback) {
+                    case ALREADY_CONNECTED -> {
+                        sendMessage(new TranslationContainer("waterdog.downstream.connected", serverInfo.getServerName()));
+                    }
+                    case ALREADY_CONNECTING -> {
+                        sendMessage(new TranslationContainer("waterdog.downstream.connecting", serverInfo.getServerName()));
+                    }
+                    case FALLBACK -> {
+                        sendMessage(new TranslationContainer("waterdog.connected.fallback", targetServer.getServerName()));
+                    }
+                    case FAILED -> {
+                        String exceptionMessage = Objects.requireNonNullElse(error.getLocalizedMessage(), error.getClass().getSimpleName());
+                        disconnect(new TranslationContainer("waterdog.downstream.transfer.failed", targetServer.getServerName(), exceptionMessage));
+                    }
+                }
+            }
+        });
+    }
     /**
      * Transfers the player to another downstream server
      *
      * @param serverInfo ServerInfo of the target downstream server, can be received using ProxyServer#getServer
      */
-    public void connect(ServerInfo serverInfo) {
+    public void connect(ServerInfo serverInfo, ConnectCallback callback) {
         Preconditions.checkNotNull(serverInfo, "Server info can not be null!");
         Preconditions.checkArgument(this.isConnected(), "User not connected");
         Preconditions.checkArgument(this.loginCompleted.get(), "User not logged in");
@@ -267,17 +291,18 @@ public class ProxiedPlayer implements CommandSender {
         ServerTransferRequestEvent event = new ServerTransferRequestEvent(this, serverInfo);
         ProxyServer.getInstance().getEventManager().callEvent(event);
         if (event.isCancelled()) {
+            callback.completeWith(ConnectState.CANCELLED, serverInfo, null);
             return;
         }
 
         ServerInfo targetServer = event.getTargetServer();
         if (this.clientConnection != null && this.clientConnection.getServerInfo() == targetServer) {
-            this.sendMessage(new TranslationContainer("waterdog.downstream.connected", targetServer.getServerName()));
+            callback.completeWith(ConnectState.ALREADY_CONNECTED, serverInfo, null);
             return;
         }
 
         if (this.pendingServers.contains(targetServer)) {
-            this.sendMessage(new TranslationContainer("waterdog.downstream.connecting", targetServer.getServerName()));
+            callback.completeWith(ConnectState.ALREADY_CONNECTING, serverInfo, null);
             return;
         }
 
@@ -287,7 +312,7 @@ public class ProxiedPlayer implements CommandSender {
         if (connectingServer != null) {
             if (connectingServer.getServerInfo() == targetServer) {
                 this.pendingServers.remove(targetServer);
-                this.sendMessage(new TranslationContainer("waterdog.downstream.connecting", targetServer.getServerName()));
+                callback.completeWith(ConnectState.ALREADY_CONNECTING, serverInfo, null);
                 return;
             } else {
                 connectingServer.disconnect();
@@ -300,12 +325,12 @@ public class ProxiedPlayer implements CommandSender {
             ClientConnection connection = null;
             try {
                 if (future.cause() == null) {
-                    this.connect0(targetServer, connection = (ClientConnection) future.get());
+                    this.connectInternal(targetServer, connection = (ClientConnection) future.get(), callback);
                 } else {
-                    this.connectFailure(null, targetServer, future.cause());
+                    this.connectFailure(null, targetServer, future.cause(), callback);
                 }
             } catch (Throwable e) {
-                this.connectFailure(connection, targetServer, e);
+                this.connectFailure(connection, targetServer, e, callback);
                 this.setPendingConnection(null);
             } finally {
                 this.pendingServers.remove(targetServer);
@@ -313,9 +338,10 @@ public class ProxiedPlayer implements CommandSender {
         });
     }
 
-    private void connect0(ServerInfo targetServer, ClientConnection connection) {
+    private void connectInternal(ServerInfo targetServer, ClientConnection connection, ConnectCallback callback) {
         if (!this.isConnected()) {
             connection.disconnect();
+            callback.completeWith(ConnectState.DISCONNECTED, targetServer, null);
             return;
         }
 
@@ -325,6 +351,7 @@ public class ProxiedPlayer implements CommandSender {
             if (connection.isConnected()) {
                 connection.disconnect();
             }
+            callback.completeWith(ConnectState.CANCELLED, targetServer, null);
             return;
         }
 
@@ -350,23 +377,25 @@ public class ProxiedPlayer implements CommandSender {
         }
 
         this.getLogger().info("[{}|{}] -> Downstream [{}] has connected", connection.getSocketAddress(), this.getName(), targetServer.getServerName());
+        callback.completeWith(ConnectState.CONNECTED, targetServer, null);
     }
 
-    private void connectFailure(ClientConnection connection, ServerInfo targetServer, Throwable error) {
+    private void connectFailure(ClientConnection connection, ServerInfo targetServer, Throwable error, ConnectCallback callback) {
         if (connection != null) {
             connection.disconnect();
         }
 
         if (this.disconnected.get()) {
+            callback.completeWith(ConnectState.DISCONNECTED, targetServer, error);
             return;
         }
 
         this.getLogger().error("[{}|{}] Unable to connect to downstream {}", this.getAddress(), this.getName(), targetServer.getServerName(), error);
         String exceptionMessage = Objects.requireNonNullElse(error.getLocalizedMessage(), error.getClass().getSimpleName());
         if (this.sendToFallback(targetServer, ReconnectReason.EXCEPTION, exceptionMessage)) {
-            this.sendMessage(new TranslationContainer("waterdog.connected.fallback", targetServer.getServerName()));
+            callback.completeWith(ConnectState.FALLBACK, targetServer, error);
         } else {
-            this.disconnect(new TranslationContainer("waterdog.downstream.transfer.failed", targetServer.getServerName(), exceptionMessage));
+            callback.completeWith(ConnectState.FAILED, targetServer, error);
         }
     }
 
@@ -407,10 +436,6 @@ public class ProxiedPlayer implements CommandSender {
         PlayerDisconnectedEvent event = new PlayerDisconnectedEvent(this, reason);
         this.proxy.getEventManager().callEvent(event);
 
-        if (this.connection != null && this.connection.isConnected()) {
-            this.connection.disconnect(reason);
-        }
-
         if (this.clientConnection != null) {
             this.clientConnection.getServerInfo().removeConnection(this.clientConnection);
             this.clientConnection.disconnect();
@@ -419,6 +444,10 @@ public class ProxiedPlayer implements CommandSender {
         ClientConnection connection = this.getPendingConnection();
         if (connection != null) {
             connection.disconnect();
+        }
+
+        if (this.connection != null && this.connection.isConnected()) {
+            this.connection.disconnect(reason);
         }
 
         this.proxy.getPlayerManager().removePlayer(this);

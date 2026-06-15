@@ -15,6 +15,9 @@
 
 package dev.waterdog.waterdogpe.network.protocol.handler.upstream;
 
+import dev.waterdog.waterdogpe.ProxyServer;
+import it.unimi.dsi.fastutil.longs.LongArraySet;
+import it.unimi.dsi.fastutil.longs.LongSet;
 import org.cloudburstmc.protocol.bedrock.packet.*;
 import dev.waterdog.waterdogpe.event.defaults.PlayerResourcePackApplyEvent;
 import dev.waterdog.waterdogpe.packs.PackManager;
@@ -30,6 +33,7 @@ import java.util.Queue;
 public class ResourcePacksHandler extends AbstractUpstreamHandler {
 
     private final Queue<ResourcePackDataInfoPacket> pendingPacks = new LinkedList<>();
+    private final LongSet sentChunks = new LongArraySet();
     private ResourcePackDataInfoPacket sendingPack;
 
     public ResourcePacksHandler(ProxiedPlayer player) {
@@ -77,15 +81,26 @@ public class ResourcePacksHandler extends AbstractUpstreamHandler {
         if (response == null) {
             this.player.disconnect("Unknown resource pack!");
         } else {
-            this.player.sendPacket(response);
-            if (this.sendingPack != null && (packet.getChunkIndex() + 1) >= this.sendingPack.getChunkCount()) {
-                this.sendNextPacket();
-            }
+            sendLater(response);
         }
         return this.cancel();
     }
 
+    private void sendLater(ResourcePackChunkDataPacket response) {
+        ProxyServer.getInstance().getScheduler().scheduleDelayed(() -> {
+            if (!player.isConnected()) {
+                return;
+            }
+            this.player.sendPacket(response);
+            this.sentChunks.add(response.getChunkIndex());
+            if (this.sendingPack != null && this.sentChunks.size() >= this.sendingPack.getChunkCount()) {
+                this.sendNextPacket();
+            }
+        }, 10);
+    }
+
     private void sendNextPacket() {
+        this.sentChunks.clear();
         ResourcePackDataInfoPacket infoPacket = this.pendingPacks.poll();
         if (infoPacket != null && this.player.isConnected()) {
             this.sendingPack = infoPacket;
