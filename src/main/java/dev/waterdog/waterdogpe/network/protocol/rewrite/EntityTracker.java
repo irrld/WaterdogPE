@@ -31,176 +31,176 @@ import java.util.List;
  */
 public class EntityTracker implements BedrockPacketHandler {
 
-    private final ProxiedPlayer player;
+  private final ProxiedPlayer player;
 
-    public EntityTracker(ProxiedPlayer player) {
-        this.player = player;
+  public EntityTracker(ProxiedPlayer player) {
+    this.player = player;
+  }
+
+  public PacketSignal trackEntity(BedrockPacket packet) {
+    return this.handlePacket(packet);
+  }
+
+  @Override
+  public PacketSignal handle(AddPlayerPacket packet) {
+    this.player.getEntities().add(packet.getUniqueEntityId());
+    return PacketSignal.UNHANDLED;
+  }
+
+  @Override
+  public PacketSignal handle(AddEntityPacket packet) {
+    this.player.getEntities().add(packet.getUniqueEntityId());
+    for (EntityLinkData entityLink : packet.getEntityLinks()) {
+      this.handleEntityLink(entityLink);
     }
+    return PacketSignal.UNHANDLED;
+  }
 
-    public PacketSignal trackEntity(BedrockPacket packet) {
-        return this.handlePacket(packet);
+  @Override
+  public PacketSignal handle(AddItemEntityPacket packet) {
+    this.player.getEntities().add(packet.getUniqueEntityId());
+    return PacketSignal.UNHANDLED;
+  }
+
+  @Override
+  public PacketSignal handle(AddPaintingPacket packet) {
+    this.player.getEntities().add(packet.getUniqueEntityId());
+    return PacketSignal.UNHANDLED;
+  }
+
+  @Override
+  public PacketSignal handle(RemoveEntityPacket packet) {
+    this.player.getEntities().remove(packet.getUniqueEntityId());
+    // TODO Check if this is correct
+    this.player.getEntityLinks().remove(packet.getUniqueEntityId());
+    return PacketSignal.UNHANDLED;
+  }
+
+  @Override
+  public PacketSignal handle(AddVolumeEntityPacket packet) {
+    this.player.getVolumeEntities().put(packet.getId(), packet.getDimension());
+    return PacketSignal.UNHANDLED;
+  }
+
+  @Override
+  public PacketSignal handle(RemoveVolumeEntityPacket packet) {
+    this.player.getVolumeEntities().remove(packet.getId());
+    return PacketSignal.UNHANDLED;
+  }
+
+  @Override
+  public PacketSignal handle(PlayerFogPacket packet) {
+    this.player.setFogApplied(!packet.getFogStack().isEmpty());
+    return PacketSignal.UNHANDLED;
+  }
+
+  @Override
+  public PacketSignal handle(UpdateClientInputLocksPacket packet) {
+    this.player.setInputLockData(packet.getLockComponentData());
+    return PacketSignal.UNHANDLED;
+  }
+
+  @Override
+  public PacketSignal handle(SetHudPacket packet) {
+    if (packet.getVisibility() == HudVisibility.HIDE) {
+      this.player.getHiddenHudElements().addAll(packet.getElements());
+    } else {
+      this.player.getHiddenHudElements().removeAll(packet.getElements());
     }
+    return PacketSignal.UNHANDLED;
+  }
 
-    @Override
-    public PacketSignal handle(AddPlayerPacket packet) {
-        this.player.getEntities().add(packet.getUniqueEntityId());
-        return PacketSignal.UNHANDLED;
+  @Override
+  public PacketSignal handle(ContainerOpenPacket packet) {
+    this.player.getOpenContainers().put(packet.getId(), packet.getType());
+    return PacketSignal.UNHANDLED;
+  }
+
+  @Override
+  public PacketSignal handle(ContainerClosePacket packet) {
+    this.player.getOpenContainers().remove(packet.getId());
+    return PacketSignal.UNHANDLED;
+  }
+
+  @Override
+  public PacketSignal handle(PlayerListPacket packet) {
+    List<PlayerListPacket.Entry> entries = packet.getEntries();
+    for (PlayerListPacket.Entry entry : entries) {
+      PlayerListPacket.Action action = PacketUtils.getAction(packet, entry);
+      if (action == PlayerListPacket.Action.ADD) {
+        this.player.getPlayers().add(entry.getUuid());
+      } else if (action == PlayerListPacket.Action.REMOVE) {
+        this.player.getPlayers().remove(entry.getUuid());
+      }
     }
+    return PacketSignal.UNHANDLED;
+  }
 
-    @Override
-    public PacketSignal handle(AddEntityPacket packet) {
-        this.player.getEntities().add(packet.getUniqueEntityId());
-        for (EntityLinkData entityLink : packet.getEntityLinks()) {
-            this.handleEntityLink(entityLink);
-        }
-        return PacketSignal.UNHANDLED;
+  @Override
+  public PacketSignal handle(SetEntityLinkPacket packet) {
+    this.handleEntityLink(packet.getEntityLink());
+    return PacketSignal.UNHANDLED;
+  }
+
+  private void handleEntityLink(EntityLinkData entityLink) {
+    if (entityLink.getType() == EntityLinkData.Type.REMOVE) {
+      this.player.getEntityLinks().remove(entityLink.getFrom());
+    } else {
+      this.player.getEntityLinks().put(entityLink.getFrom(), entityLink.getTo());
     }
+  }
 
-    @Override
-    public PacketSignal handle(AddItemEntityPacket packet) {
-        this.player.getEntities().add(packet.getUniqueEntityId());
-        return PacketSignal.UNHANDLED;
+  @Override
+  public PacketSignal handle(SetEntityDataPacket packet) {
+    if (packet.getRuntimeEntityId() == this.player.getRewriteData().getOriginalEntityId()) {
+      boolean immobile = PlayerRewriteUtils.checkForImmobileFlag(packet.getMetadata());
+      this.player.getRewriteData().setImmobileFlag(immobile);
     }
+    return PacketSignal.UNHANDLED;
+  }
 
-    @Override
-    public PacketSignal handle(AddPaintingPacket packet) {
-        this.player.getEntities().add(packet.getUniqueEntityId());
-        return PacketSignal.UNHANDLED;
-    }
+  @Override
+  public final PacketSignal handle(SetDisplayObjectivePacket packet) {
+    this.player.getScoreboards().add(packet.getObjectiveId());
+    return PacketSignal.UNHANDLED;
+  }
 
-    @Override
-    public PacketSignal handle(RemoveEntityPacket packet) {
-        this.player.getEntities().remove(packet.getUniqueEntityId());
-        // TODO Check if this is correct
-        this.player.getEntityLinks().remove(packet.getUniqueEntityId());
-        return PacketSignal.UNHANDLED;
-    }
+  @Override
+  public final PacketSignal handle(RemoveObjectivePacket packet) {
+    this.player.getScoreboards().remove(packet.getObjectiveId());
+    return PacketSignal.UNHANDLED;
+  }
 
-    @Override
-    public PacketSignal handle(AddVolumeEntityPacket packet) {
-        this.player.getVolumeEntities().put(packet.getId(), packet.getDimension());
-        return PacketSignal.UNHANDLED;
-    }
-
-    @Override
-    public PacketSignal handle(RemoveVolumeEntityPacket packet) {
-        this.player.getVolumeEntities().remove(packet.getId());
-        return PacketSignal.UNHANDLED;
-    }
-
-    @Override
-    public PacketSignal handle(PlayerFogPacket packet) {
-        this.player.setFogApplied(!packet.getFogStack().isEmpty());
-        return PacketSignal.UNHANDLED;
-    }
-
-    @Override
-    public PacketSignal handle(UpdateClientInputLocksPacket packet) {
-        this.player.setInputLockData(packet.getLockComponentData());
-        return PacketSignal.UNHANDLED;
-    }
-
-    @Override
-    public PacketSignal handle(SetHudPacket packet) {
-        if (packet.getVisibility() == HudVisibility.HIDE) {
-            this.player.getHiddenHudElements().addAll(packet.getElements());
+  @Override
+  public final PacketSignal handle(SetScorePacket packet) {
+    SetScorePacket.Action action = packet.getAction();
+    if (action == SetScorePacket.Action.SET) {
+      for (ScoreInfo info : packet.getInfos()) {
+        this.player.getScoreInfos().put(info.getScoreboardId(), info);
+      }
+    } else if (action == SetScorePacket.Action.REMOVE) {
+      for (ScoreInfo info : packet.getInfos()) {
+        this.player.getScoreInfos().remove(info.getScoreboardId());
+      }
+    } else {
+      // Since 26.40 the ScorerType.INVALID is used for REMOVE action
+      for (ScoreInfo info : packet.getInfos()) {
+        if (info.getType() == ScoreInfo.ScorerType.INVALID) {
+          this.player.getScoreInfos().remove(info.getScoreboardId());
         } else {
-            this.player.getHiddenHudElements().removeAll(packet.getElements());
+          this.player.getScoreInfos().put(info.getScoreboardId(), info);
         }
-        return PacketSignal.UNHANDLED;
+      }
     }
+    return PacketSignal.UNHANDLED;
+  }
 
-    @Override
-    public PacketSignal handle(ContainerOpenPacket packet) {
-        this.player.getOpenContainers().put(packet.getId(), packet.getType());
-        return PacketSignal.UNHANDLED;
+  @Override
+  public final PacketSignal handle(BossEventPacket packet) {
+    switch (packet.getAction()) {
+      case CREATE -> this.player.getBossbars().add(packet.getBossUniqueEntityId());
+      case REMOVE -> this.player.getBossbars().remove(packet.getBossUniqueEntityId());
     }
-
-    @Override
-    public PacketSignal handle(ContainerClosePacket packet) {
-        this.player.getOpenContainers().remove(packet.getId());
-        return PacketSignal.UNHANDLED;
-    }
-
-    @Override
-    public PacketSignal handle(PlayerListPacket packet) {
-        List<PlayerListPacket.Entry> entries = packet.getEntries();
-        for (PlayerListPacket.Entry entry : entries) {
-            PlayerListPacket.Action action = PacketUtils.getAction(packet, entry);
-            if (action == PlayerListPacket.Action.ADD) {
-                this.player.getPlayers().add(entry.getUuid());
-            } else if (action == PlayerListPacket.Action.REMOVE) {
-                this.player.getPlayers().remove(entry.getUuid());
-            }
-        }
-        return PacketSignal.UNHANDLED;
-    }
-
-    @Override
-    public PacketSignal handle(SetEntityLinkPacket packet) {
-        this.handleEntityLink(packet.getEntityLink());
-        return PacketSignal.UNHANDLED;
-    }
-
-    private void handleEntityLink(EntityLinkData entityLink) {
-        if (entityLink.getType() == EntityLinkData.Type.REMOVE) {
-            this.player.getEntityLinks().remove(entityLink.getFrom());
-        } else {
-            this.player.getEntityLinks().put(entityLink.getFrom(), entityLink.getTo());
-        }
-    }
-
-    @Override
-    public PacketSignal handle(SetEntityDataPacket packet) {
-        if (packet.getRuntimeEntityId() == this.player.getRewriteData().getOriginalEntityId()) {
-            boolean immobile = PlayerRewriteUtils.checkForImmobileFlag(packet.getMetadata());
-            this.player.getRewriteData().setImmobileFlag(immobile);
-        }
-        return PacketSignal.UNHANDLED;
-    }
-
-    @Override
-    public final PacketSignal handle(SetDisplayObjectivePacket packet) {
-        this.player.getScoreboards().add(packet.getObjectiveId());
-        return PacketSignal.UNHANDLED;
-    }
-
-    @Override
-    public final PacketSignal handle(RemoveObjectivePacket packet) {
-        this.player.getScoreboards().remove(packet.getObjectiveId());
-        return PacketSignal.UNHANDLED;
-    }
-
-    @Override
-    public final PacketSignal handle(SetScorePacket packet) {
-        SetScorePacket.Action action = packet.getAction();
-        if (action == SetScorePacket.Action.SET) {
-            for (ScoreInfo info : packet.getInfos()) {
-                this.player.getScoreInfos().put(info.getScoreboardId(), info);
-            }
-        } else if (action == SetScorePacket.Action.REMOVE) {
-            for (ScoreInfo info : packet.getInfos()) {
-                this.player.getScoreInfos().remove(info.getScoreboardId());
-            }
-        } else {
-            // Since 26.40 the ScorerType.INVALID is used for REMOVE action
-            for (ScoreInfo info : packet.getInfos()) {
-                if (info.getType() == ScoreInfo.ScorerType.INVALID) {
-                    this.player.getScoreInfos().remove(info.getScoreboardId());
-                } else {
-                    this.player.getScoreInfos().put(info.getScoreboardId(), info);
-                }
-            }
-        }
-        return PacketSignal.UNHANDLED;
-    }
-
-    @Override
-    public final PacketSignal handle(BossEventPacket packet) {
-        switch (packet.getAction()) {
-            case CREATE -> this.player.getBossbars().add(packet.getBossUniqueEntityId());
-            case REMOVE -> this.player.getBossbars().remove(packet.getBossUniqueEntityId());
-        }
-        return PacketSignal.UNHANDLED;
-    }
+    return PacketSignal.UNHANDLED;
+  }
 }
