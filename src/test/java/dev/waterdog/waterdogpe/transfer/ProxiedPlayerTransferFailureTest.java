@@ -157,12 +157,18 @@ public class ProxiedPlayerTransferFailureTest {
 
     @Test
     void dialFailureDoesNotStompNewerAttempt() {
-        ServerInfo newerTarget = this.harness.newServer("newer");
-        ClientConnection newerConnection = this.harness.newDownstream(newerTarget);
-        this.harness.setPendingConnection(newerConnection);
-
         ServerInfo failedTarget = this.harness.newServer("game");
-        this.harness.player.onTransferFailure(null, failedTarget, ReconnectReason.EXCEPTION, "boom");
+        Promise<ClientConnection> failingDial = this.harness.stubDial(failedTarget);
+        this.harness.player.connect(failedTarget);
+
+        ServerInfo newerTarget = this.harness.newServer("newer");
+        Promise<ClientConnection> newerDial = this.harness.stubDial(newerTarget);
+        this.harness.player.connect(newerTarget);
+        ClientConnection newerConnection = this.harness.newDownstream(newerTarget);
+        newerDial.setSuccess(newerConnection);
+
+        // The older dial fails after the newer attempt was already established.
+        failingDial.setFailure(new Exception("boom"));
 
         assertSame(newerConnection, this.harness.player.getPendingConnection(), "the in-flight attempt must survive");
         verify(this.harness.reconnectHandler, never()).getTransferFailureServer(any(), any(), any(), anyString());

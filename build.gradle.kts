@@ -23,7 +23,7 @@ plugins {
 }
 
 group = "dev.waterdog.waterdogpe"
-version = "2.0.4-SNAPSHOT"
+version = "2.0.4c-SNAPSHOT"
 description = "Brand new Minecraft: Bedrock Edition proxy created by authors of well-known Waterdog proxy"
 
 java {
@@ -35,8 +35,8 @@ java {
 repositories {
     mavenLocal() // locally built protocol/raknet snapshots take priority, like with Maven
     mavenCentral()
-    maven("https://repo.opencollab.dev/maven-releases/")
-    maven("https://repo.opencollab.dev/maven-snapshots/")
+    maven("https://repo.teon.llc/repository/maven-releases/")
+    maven("https://repo.teon.llc/repository/maven-snapshots/")
     maven("https://repo.waterdog.dev/main")
 }
 

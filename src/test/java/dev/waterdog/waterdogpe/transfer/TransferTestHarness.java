@@ -36,6 +36,8 @@ import dev.waterdog.waterdogpe.utils.types.TextContainer;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.ImmediateEventExecutor;
 import io.netty.util.concurrent.Promise;
+import net.craftersmc.ConnectCallback;
+import net.craftersmc.ConnectState;
 import org.cloudburstmc.protocol.bedrock.codec.BedrockCodecHelper;
 import org.cloudburstmc.protocol.bedrock.packet.RequestChunkRadiusPacket;
 
@@ -165,8 +167,17 @@ public class TransferTestHarness implements AutoCloseable {
         this.player.setDownstreamConnection(connection);
     }
 
+    /**
+     * Installs a pending attempt. Every pending connection carries a callback, so a no-op one is
+     * stored alongside to uphold the invariant.
+     */
     public void setPendingConnection(ClientConnection connection) {
         setField(this.player, "pendingConnection", connection);
+        setField(this.player, "pendingConnectCallback", connection == null ? null : new ConnectCallback() {
+            @Override
+            public void whenComplete(ConnectState state, ServerInfo targetServer, Throwable error) {
+            }
+        });
     }
 
     /**
