@@ -461,7 +461,9 @@ public class PlayerRewriteUtils {
             data.setPosition(offset);
             data.setResult(SubChunkRequestResult.SUCCESS_ALL_AIR);
             if (version.isBefore(ProtocolVersion.MINECRAFT_PE_1_26_40)) {
-                data.setData(Unpooled.EMPTY_BUFFER); // older serializers write this unconditionally when cache is off
+                // older serializers write this unconditionally when cache is off
+                // but with v1.26.40, it causes the client to disconnect if data is sent
+                data.setData(Unpooled.EMPTY_BUFFER);
             }
             data.setHeightMapType(HeightMapDataType.HAS_DATA);
             data.setRenderHeightMapType(HeightMapDataType.COPIED);
