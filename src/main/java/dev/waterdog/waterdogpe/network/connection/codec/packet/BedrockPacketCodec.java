@@ -35,6 +35,7 @@ import org.cloudburstmc.protocol.bedrock.packet.UnknownPacket;
 import java.util.List;
 
 import static java.util.Objects.requireNonNull;
+import static org.cloudburstmc.protocol.bedrock.netty.codec.packet.BedrockPacketCodec.MAX_LENGTH_PREFIX_BYTES;
 
 @Log4j2
 public abstract class BedrockPacketCodec extends MessageToMessageCodec<BedrockBatchWrapper, BedrockBatchWrapper> {
@@ -90,11 +91,16 @@ public abstract class BedrockPacketCodec extends MessageToMessageCodec<BedrockBa
 
         ByteBuf buf = ctx.alloc().buffer(128);
         try {
+            // Leave room for the batch length prefix ahead of the packet, so batching can write
+            // it in place. The reserved bytes sit before the reader index and are never read.
+            buf.setIndex(MAX_LENGTH_PREFIX_BYTES, MAX_LENGTH_PREFIX_BYTES);
+
             BedrockPacket packet = wrapper.getPacket();
             wrapper.setPacketId(getPacketId(packet));
             this.encodeHeader(buf, wrapper);
             this.codec.tryEncode(helper, buf, packet);
             wrapper.setPacketBuffer(buf.retain());
+            wrapper.setReservedPrefixBytes(MAX_LENGTH_PREFIX_BYTES);
         } catch (Throwable t) {
             log.error("Error encoding packet {}", wrapper.getPacket(), t);
         } finally {
@@ -112,7 +118,7 @@ public abstract class BedrockPacketCodec extends MessageToMessageCodec<BedrockBa
         try {
             int index = msg.readerIndex();
             this.decodeHeader(msg, wrapper);
-            wrapper.setHeaderLength(msg.readerIndex() - index);
+            wrapper.setHeaderLength((byte) (msg.readerIndex() - index));
             if (this.alwaysDecode) { // Otherwise, we are decoding at other place
                 wrapper.setPacket(this.codec.tryDecode(helper, msg, wrapper.getPacketId(), this.inboundRecipient));
             }

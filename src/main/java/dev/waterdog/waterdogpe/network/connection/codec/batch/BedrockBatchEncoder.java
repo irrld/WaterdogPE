@@ -43,10 +43,7 @@ public class BedrockBatchEncoder extends MessageToMessageEncoder<BedrockBatchWra
                     throw new IllegalArgumentException("BedrockPacket is not encoded");
                 }
 
-                ByteBuf header = ctx.alloc().ioBuffer(5);
-                VarInts.writeUnsignedInt(header, message.readableBytes());
-                buf.addComponent(true, header);
-                buf.addComponent(true, message.retainedSlice());
+                org.cloudburstmc.protocol.bedrock.netty.codec.batch.BedrockBatchEncoder.addPrefixed(ctx, buf, message, packet.getReservedPrefixBytes());
             }
             msg.setUncompressed(buf.retain());
         } finally {
