@@ -17,27 +17,46 @@ package dev.waterdog.waterdogpe.packs.types;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.DigestInputStream;
 import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
 public class ZipResourcePack extends ResourcePack {
 
     private final ZipFile zipFile;
-    private byte[] cachedHash;
+    // Taken while loading, not on the network thread when a player first asks for the pack
+    private final byte[] hash;
     private ByteBuffer cachedPack;
 
     public ZipResourcePack(Path file) throws IOException {
         super(file);
+        this.hash = sha256(this.packPath);
         try {
             this.zipFile = new ZipFile(this.packPath.toFile());
         } catch (IOException e) {
             throw new IOException("ResourcePack is not zip file!");
         }
+    }
+
+    // Streamed, a pack can be larger than the heap
+    private static byte[] sha256(Path path) throws IOException {
+        MessageDigest digest;
+        try {
+            digest = MessageDigest.getInstance("SHA-256");
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException(e);
+        }
+        try (InputStream input = new DigestInputStream(Files.newInputStream(path), digest)) {
+            input.transferTo(OutputStream.nullOutputStream());
+        }
+        return digest.digest();
     }
 
     public ZipEntry getZipEntry(Path path) {
@@ -84,14 +103,7 @@ public class ZipResourcePack extends ResourcePack {
 
     @Override
     public byte[] getHash() {
-        if (this.cachedHash == null) {
-            try {
-                this.cachedHash = MessageDigest.getInstance("SHA-256").digest(Files.readAllBytes(this.packPath));
-            } catch (Exception e) {
-                throw new IllegalStateException("Unable to get hash of pack", e);
-            }
-        }
-        return this.cachedHash;
+        return this.hash;
     }
 
     @Override
