@@ -30,13 +30,16 @@ import java.util.Map;
  */
 public class ResourcePacksHandler extends AbstractUpstreamHandler {
 
+    // The client buffers out-of-order chunks in memory, so at most this many wait there
+    private static final int HOLD_WINDOW = 100;
+
     // Packs offered to this client by id_version
     private final Map<String, ResourcePackDataInfoPacket> offeredPacks = new HashMap<>();
     private final Map<String, BitSet> sentChunks = new HashMap<>();
     // The client writes chunks in order on one IO thread that also unzips finished packs, and only shows an
-    // in-order chunk on its progress bar once written. Chunk 0 goes last so the rest skip that queue, as on BDS.
-    // Holds at most one request per offered pack.
-    private final Map<String, ResourcePackChunkRequestPacket> heldFirstChunks = new HashMap<>();
+    // in-order chunk on its progress bar once written. The first chunk of every window goes last, so the rest
+    // skip that queue as on BDS.
+    private final Map<String, BitSet> heldChunks = new HashMap<>();
 
     public ResourcePacksHandler(ProxiedPlayer player) {
         super(player);
@@ -93,19 +96,24 @@ public class ResourcePacksHandler extends AbstractUpstreamHandler {
 
         // Each chunk is sent once
         BitSet sent = this.sentChunks.computeIfAbsent(packIdVer, id -> new BitSet());
-        if (sent.get(index) || (index == 0 && this.heldFirstChunks.containsKey(packIdVer))) {
+        BitSet held = this.heldChunks.computeIfAbsent(packIdVer, id -> new BitSet());
+        if (sent.get(index) || held.get(index)) {
             return this.cancel();
         }
-        if (index == 0 && sent.cardinality() < info.getChunkCount() - 1) {
-            this.heldFirstChunks.put(packIdVer, packet);
+        int start = index - index % HOLD_WINDOW;
+        int end = (int) Math.min(start + HOLD_WINDOW, info.getChunkCount());
+        if (index == start && sent.nextClearBit(start + 1) < end) {
+            held.set(index);
             return this.cancel();
         }
 
-        if (this.sendChunk(packIdVer, sent, packet) && sent.cardinality() == info.getChunkCount() - 1) {
-            ResourcePackChunkRequestPacket first = this.heldFirstChunks.remove(packIdVer);
-            if (first != null) {
-                this.sendChunk(packIdVer, sent, first);
-            }
+        if (this.sendChunk(packIdVer, sent, packet) && held.get(start) && sent.nextClearBit(start + 1) >= end) {
+            held.clear(start);
+            ResourcePackChunkRequestPacket first = new ResourcePackChunkRequestPacket();
+            first.setPackId(packet.getPackId());
+            first.setPackVersion(packet.getPackVersion());
+            first.setChunkIndex(start);
+            this.sendChunk(packIdVer, sent, first);
         }
         return this.cancel();
     }

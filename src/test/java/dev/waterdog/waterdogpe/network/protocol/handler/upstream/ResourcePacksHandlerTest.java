@@ -27,8 +27,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.IntStream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -124,6 +126,57 @@ class ResourcePacksHandlerTest {
         this.handler.handle(this.chunk(pair, 0));
 
         assertEquals(List.of(0, 1, 0), this.sentChunkIndexes());
+    }
+
+    @Test
+    void holdsTheFirstChunkOfEveryWindow() {
+        ResourcePackDataInfoPacket pack = this.pack(150);
+        this.requestPacks(pack);
+
+        for (int index = 0; index < 150; index++) {
+            this.handler.handle(this.chunk(pack, index));
+        }
+
+        List<Integer> expected = new ArrayList<>();
+        IntStream.range(1, 100).forEach(expected::add);
+        expected.add(0);
+        IntStream.range(101, 150).forEach(expected::add);
+        expected.add(100);
+        assertEquals(expected, this.sentChunkIndexes());
+    }
+
+    @Test
+    void holdsEachWindowOnItsOwn() {
+        ResourcePackDataInfoPacket pack = this.pack(150);
+        this.requestPacks(pack);
+
+        // The second window is asked for before the first is done
+        this.handler.handle(this.chunk(pack, 0));
+        this.handler.handle(this.chunk(pack, 100));
+        for (int index = 101; index < 150; index++) {
+            this.handler.handle(this.chunk(pack, index));
+        }
+        for (int index = 1; index < 100; index++) {
+            this.handler.handle(this.chunk(pack, index));
+        }
+
+        List<Integer> expected = new ArrayList<>();
+        IntStream.range(101, 150).forEach(expected::add);
+        expected.add(100);
+        IntStream.range(1, 100).forEach(expected::add);
+        expected.add(0);
+        assertEquals(expected, this.sentChunkIndexes());
+    }
+
+    @Test
+    void sendsALastWindowOfOneChunkRightAway() {
+        ResourcePackDataInfoPacket pack = this.pack(101);
+        this.requestPacks(pack);
+
+        this.handler.handle(this.chunk(pack, 0));
+        this.handler.handle(this.chunk(pack, 100));
+
+        assertEquals(List.of(100), this.sentChunkIndexes());
     }
 
     private List<Integer> sentChunkIndexes() {
