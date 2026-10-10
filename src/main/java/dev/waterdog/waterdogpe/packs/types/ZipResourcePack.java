@@ -117,9 +117,10 @@ public class ZipResourcePack extends ResourcePack {
             return chunkData;
         }
 
+        // skip and read may stop short, which would send the rest of the chunk as zeros
         try (InputStream inputStream = Files.newInputStream(this.packPath)) {
-            inputStream.skip(offset);
-            inputStream.read(chunkData);
+            inputStream.skipNBytes(offset);
+            inputStream.readNBytes(chunkData, 0, chunkData.length);
         } catch (IOException e) {
             throw new IllegalStateException("Unable to read pack chunk", e);
         }

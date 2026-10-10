@@ -23,6 +23,7 @@ import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.MessageDigest;
+import java.util.Arrays;
 import java.util.Random;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -56,6 +57,22 @@ class ZipResourcePackTest {
             // Same size, other bytes: only a hash taken when the pack was opened still matches
             Files.write(file, new byte[(int) Files.size(file)]);
             assertArrayEquals(opened, pack.getHash());
+        } finally {
+            pack.close();
+        }
+    }
+
+    @Test
+    void readsWholeChunksFromDisk() throws Exception {
+        Path file = this.pack();
+        byte[] bytes = Files.readAllBytes(file);
+        int chunkSize = 100 * 1024;
+        int lastOffset = (bytes.length - 1) / chunkSize * chunkSize;
+
+        ZipResourcePack pack = new ZipResourcePack(file);
+        try {
+            assertArrayEquals(Arrays.copyOfRange(bytes, chunkSize, 2 * chunkSize), pack.getChunk(chunkSize, chunkSize));
+            assertArrayEquals(Arrays.copyOfRange(bytes, lastOffset, bytes.length), pack.getChunk(lastOffset, chunkSize));
         } finally {
             pack.close();
         }
